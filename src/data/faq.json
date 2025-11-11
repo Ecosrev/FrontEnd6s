@@ -1,0 +1,403 @@
+{
+  "intents": [
+    {
+      "id": 1,
+      "intent": "sobre_ecosrev",
+      "questions": [
+        "O que é o Ecosrev?",
+        "Pra que serve o Ecosrev?",
+        "Me explica o Ecosrev",
+        "Qual é a função do Ecosrev?",
+        "O que faz o aplicativo Ecosrev?",
+        "Como funciona o Ecosrev?",
+        "Ecosrev é sobre o que?",
+        "Qual o objetivo do app?"
+      ],
+      "answer": "O Ecosrev é um aplicativo criado para facilitar o descarte correto de resíduos eletroeletrônicos. A plataforma conecta usuários a pontos de coleta e empresas especializadas, tornando o processo de reciclagem mais prático, acessível e sustentável."
+    },
+    {
+      "id": 2,
+      "intent": "cadastro_usuario",
+      "questions": [
+        "Como faço para me cadastrar?",
+        "Como criar uma conta?",
+        "Quero me registrar",
+        "Como me inscrever no app?",
+        "Quais dados preciso para cadastrar?",
+        "O que preciso para criar conta?",
+        "Como fazer cadastro?",
+        "Preciso de quais informações para cadastrar?"
+      ],
+      "answer": "Para se cadastrar no Ecosrev, você precisa informar: nome completo, CPF, email, celular e criar uma senha forte. Basta acessar a tela de cadastro no app e preencher todos os campos solicitados."
+    },
+    {
+      "id": 3,
+      "intent": "login",
+      "questions": [
+        "Como faço login?",
+        "Como entrar no app?",
+        "Como acessar minha conta?",
+        "Não consigo entrar",
+        "Como fazer login?",
+        "Qual o processo de login?",
+        "Como acesso o aplicativo?"
+      ],
+      "answer": "Para fazer login no Ecosrev, utilize seu email e senha cadastrados. Na tela inicial, insira suas credenciais e clique em entrar. Sua sessão será mantida automaticamente."
+    },
+    {
+      "id": 4,
+      "intent": "esqueci_senha",
+      "questions": [
+        "Esqueci minha senha",
+        "Como recuperar senha?",
+        "Perdi minha senha",
+        "Como resetar a senha?",
+        "Não lembro da senha",
+        "Como redefinir senha?",
+        "Recuperação de senha",
+        "Quero trocar senha esquecida"
+      ],
+      "answer": "Para recuperar sua senha, clique em 'Esqueci minha senha' na tela de login. Você receberá um link ou código de recuperação no seu email cadastrado. Use esse link para criar uma nova senha. O link expira após o uso ou em algumas horas."
+    },
+    {
+      "id": 5,
+      "intent": "alterar_senha",
+      "questions": [
+        "Como trocar minha senha?",
+        "Quero mudar a senha",
+        "Como alterar senha?",
+        "Posso mudar minha senha?",
+        "Como faço para trocar senha?",
+        "Mudança de senha"
+      ],
+      "answer": "Para alterar sua senha, acesse seu perfil no app, vá em configurações e selecione 'Alterar senha'. Você precisará informar sua senha atual e depois confirmar a nova senha duas vezes."
+    },
+    {
+      "id": 6,
+      "intent": "sistema_pontos",
+      "questions": [
+        "Como ganho pontos?",
+        "Como funciona o sistema de pontos?",
+        "Como acumular pontos?",
+        "O que são os pontos?",
+        "Como consigo pontos?",
+        "Pontos servem para que?",
+        "Como funciona a pontuação?"
+      ],
+      "answer": "Você ganha pontos no Ecosrev através da leitura de QR codes presentes nos pontos de coleta. Cada vez que você descarta corretamente um resíduo eletroeletrônico e escaneia o QR code válido, pontos são adicionados automaticamente à sua conta. Os pontos podem ser usados para resgatar benefícios."
+    },
+    {
+      "id": 7,
+      "intent": "qrcode",
+      "questions": [
+        "Como usar o QR code?",
+        "Como escanear QR code?",
+        "Onde está o leitor de QR?",
+        "Como ler QR code?",
+        "Não consigo escanear o código",
+        "QR code não funciona",
+        "Como funciona o QR code?"
+      ],
+      "answer": "Para usar o QR code, acesse a função de leitura através da câmera do app. Aponte para o QR code no ponto de coleta e aguarde a confirmação. Os pontos serão adicionados automaticamente após validação. Cada QR code só pode ser usado uma vez por usuário."
+    },
+    {
+      "id": 8,
+      "intent": "beneficios",
+      "questions": [
+        "Quais benefícios posso resgatar?",
+        "O que posso trocar com os pontos?",
+        "Que tipo de benefício tem?",
+        "Tem descontos disponíveis?",
+        "Posso resgatar ingressos?",
+        "O que tem para resgatar?",
+        "Quais são as recompensas?"
+      ],
+      "answer": "No Ecosrev você pode resgatar diversos benefícios como ingressos para eventos, descontos em estabelecimentos parceiros e outras vantagens. Cada benefício tem um custo específico em pontos. Confira a lista completa na seção de benefícios do app."
+    },
+    {
+      "id": 9,
+      "intent": "resgate",
+      "questions": [
+        "Como resgatar benefícios?",
+        "Como trocar meus pontos?",
+        "Quero resgatar um benefício",
+        "Como usar meus pontos?",
+        "Processo de resgate",
+        "Como funciona o resgate?",
+        "Não consigo resgatar"
+      ],
+      "answer": "Para resgatar benefícios, acesse a seção de benefícios, escolha o que deseja, verifique se você tem pontos suficientes e confirme o resgate. Os pontos serão debitados automaticamente e você receberá um comprovante ou código do benefício resgatado."
+    },
+    {
+      "id": 10,
+      "intent": "saldo_pontos",
+      "questions": [
+        "Quantos pontos eu tenho?",
+        "Qual meu saldo?",
+        "Ver meus pontos",
+        "Consultar saldo",
+        "Onde vejo meus pontos?",
+        "Verificar pontuação",
+        "Qual é meu saldo de pontos?"
+      ],
+      "answer": "Você pode consultar seu saldo atual de pontos na tela inicial do app ou acessando a seção 'Meus Pontos' no menu. Lá você verá seu saldo total disponível para resgate."
+    },
+    {
+      "id": 11,
+      "intent": "historico",
+      "questions": [
+        "Como ver meu histórico?",
+        "Histórico de pontos",
+        "Minhas transações",
+        "Ver histórico de resgates",
+        "Consultar extrato",
+        "Onde fica o histórico?",
+        "Quero ver meu extrato de pontos"
+      ],
+      "answer": "Seu histórico completo está disponível na seção 'Histórico' do app. Lá você pode ver todas as suas transações, incluindo ganhos de pontos e resgates realizados. É possível filtrar por período para facilitar a consulta."
+    },
+    {
+      "id": 12,
+      "intent": "perfil",
+      "questions": [
+        "Como editar meu perfil?",
+        "Alterar dados cadastrais",
+        "Mudar informações do perfil",
+        "Como atualizar cadastro?",
+        "Editar dados pessoais",
+        "Modificar perfil",
+        "Trocar dados cadastrados"
+      ],
+      "answer": "Para editar seu perfil, acesse a seção 'Perfil' ou 'Minha Conta' no menu do app. Lá você pode visualizar e editar seus dados básicos como nome, telefone e outras informações. Todas as alterações são validadas antes de serem salvas."
+    },
+    {
+      "id": 13,
+      "intent": "logout",
+      "questions": [
+        "Como sair do app?",
+        "Fazer logout",
+        "Deslogar da conta",
+        "Sair da minha conta",
+        "Como desconectar?",
+        "Encerrar sessão"
+      ],
+      "answer": "Para sair da sua conta, acesse o menu do app e selecione a opção 'Sair' ou 'Logout'. Você precisará fazer login novamente para acessar sua conta posteriormente."
+    },
+    {
+      "id": 14,
+      "intent": "acessibilidade",
+      "questions": [
+        "Como aumentar fonte?",
+        "Mudar tamanho da letra",
+        "Ajustar fonte",
+        "Letra muito pequena",
+        "Recursos de acessibilidade",
+        "Como deixar letra maior?",
+        "Configurações de acessibilidade"
+      ],
+      "answer": "O Ecosrev oferece recursos de acessibilidade para melhorar sua experiência. Você pode ajustar o tamanho das fontes acessando as configurações do app. As alterações são aplicadas em todas as telas e o layout se adapta automaticamente."
+    },
+    {
+      "id": 15,
+      "intent": "residuos_aceitos",
+      "questions": [
+        "O que posso descartar?",
+        "Quais resíduos são aceitos?",
+        "Tipos de lixo eletrônico",
+        "O que é lixo eletrônico?",
+        "Aceita celular velho?",
+        "Posso descartar computador?",
+        "Que tipo de eletrônico descarta?"
+      ],
+      "answer": "O Ecosrev facilita o descarte de resíduos eletroeletrônicos como celulares, computadores, tablets, televisores, monitores, baterias, carregadores, fios, pilhas, eletrodomésticos pequenos e outros equipamentos eletrônicos. Consulte os pontos de coleta para informações específicas sobre cada tipo de resíduo."
+    },
+    {
+      "id": 16,
+      "intent": "pontos_coleta",
+      "questions": [
+        "Onde descartar?",
+        "Pontos de coleta",
+        "Onde fica o ponto de coleta?",
+        "Como encontrar local de descarte?",
+        "Pontos de reciclagem",
+        "Onde levar o lixo eletrônico?",
+        "Localizar ponto de coleta"
+      ],
+      "answer": "Para encontrar pontos de coleta próximos a você, utilize a função de busca no app. O Ecosrev mostra todos os pontos de coleta e empresas especializadas cadastradas, com endereço, horário de funcionamento e tipos de resíduos aceitos."
+    },
+    {
+      "id": 17,
+      "intent": "seguranca_dados",
+      "questions": [
+        "Meus dados estão seguros?",
+        "Como protegem minhas informações?",
+        "Segurança do app",
+        "Privacidade dos dados",
+        "Protecção de informações pessoais"
+      ],
+      "answer": "A segurança dos seus dados é nossa prioridade. O Ecosrev utiliza criptografia para proteger suas informações pessoais e transações. Seus dados são armazenados de forma segura e utilizados apenas para melhorar sua experiência no app."
+    },
+    {
+      "id": 18,
+      "intent": "problemas_tecnicos",
+      "questions": [
+        "App não funciona",
+        "Erro no aplicativo",
+        "Bug no app",
+        "Problema técnico",
+        "App travou",
+        "Não carrega",
+        "App fechando sozinho"
+      ],
+      "answer": "Se você está enfrentando problemas técnicos, tente primeiro fechar e abrir o app novamente. Verifique se há atualizações disponíveis na loja de aplicativos. Se o problema persistir, entre em contato com nosso suporte técnico através do email de contato."
+    },
+    {
+      "id": 19,
+      "intent": "suporte",
+      "questions": [
+        "Como falar com suporte?",
+        "Preciso de ajuda",
+        "Contato do suporte",
+        "Falar com atendente",
+        "Ajuda técnica",
+        "Como entrar em contato?",
+        "Suporte técnico"
+      ],
+      "answer": "Para entrar em contato com nosso suporte, você pode enviar um email através da seção 'Ajuda' ou 'Contato' no menu do app. Nossa equipe responderá o mais breve possível para resolver sua dúvida ou problema."
+    },
+    {
+      "id": 20,
+      "intent": "importancia_reciclagem",
+      "questions": [
+        "Por que reciclar eletrônicos?",
+        "Importância da reciclagem",
+        "Por que descartar corretamente?",
+        "Benefícios da reciclagem",
+        "Por que não jogar no lixo comum?",
+        "Impacto ambiental"
+      ],
+      "answer": "O descarte correto de resíduos eletroeletrônicos é essencial para proteger o meio ambiente. Esses materiais contêm substâncias tóxicas que podem contaminar o solo e a água. Além disso, a reciclagem permite recuperar materiais valiosos e reduz a necessidade de extração de novos recursos naturais."
+    },
+    {
+      "id": 21,
+      "intent": "requisitos_app",
+      "questions": [
+        "Requisitos do app",
+        "Funciona no meu celular?",
+        "Qual versão do Android?",
+        "Compatibilidade do app",
+        "Preciso de qual sistema?",
+        "Roda no iOS?"
+      ],
+      "answer": "O Ecosrev está disponível para smartphones Android e iOS. Consulte a loja de aplicativos do seu dispositivo para verificar os requisitos específicos de sistema operacional compatíveis com a versão atual do app."
+    },
+    {
+      "id": 22,
+      "intent": "validacao_qrcode",
+      "questions": [
+        "QR code já foi usado",
+        "Não posso usar o mesmo QR code?",
+        "Por que o código não funciona de novo?",
+        "Limite de uso do QR",
+        "QR code inválido"
+      ],
+      "answer": "Cada QR code só pode ser escaneado uma vez por usuário para garantir a validade do sistema de pontos. Isso evita o uso indevido e mantém a justiça na distribuição de pontos. Se você já escaneou um QR code, ele não funcionará novamente na sua conta."
+    },
+    {
+      "id": 23,
+      "intent": "saldo_insuficiente",
+      "questions": [
+        "Não tenho pontos suficientes",
+        "Saldo insuficiente",
+        "Preciso de mais pontos",
+        "Quantos pontos faltam?",
+        "Não consigo resgatar por falta de pontos"
+      ],
+      "answer": "Se você não tem pontos suficientes para resgatar um benefício, continue descartando resíduos eletroeletrônicos nos pontos de coleta e escaneando os QR codes para acumular mais pontos. Cada descarte correto adiciona pontos à sua conta."
+    },
+    {
+      "id": 24,
+      "intent": "cancelar_conta",
+      "questions": [
+        "Como excluir minha conta?",
+        "Deletar conta",
+        "Cancelar cadastro",
+        "Remover minha conta",
+        "Quero sair do Ecosrev definitivamente"
+      ],
+      "answer": "Para excluir sua conta permanentemente, acesse as configurações do seu perfil e procure a opção de exclusão de conta, ou entre em contato com nosso suporte. Lembre-se que esta ação é irreversível e você perderá todos os seus pontos acumulados."
+    },
+    {
+      "id": 25,
+      "intent": "parceiros",
+      "questions": [
+        "Quem são os parceiros?",
+        "Empresas parceiras",
+        "Estabelecimentos conveniados",
+        "Onde posso usar os benefícios?",
+        "Lista de parceiros"
+      ],
+      "answer": "O Ecosrev trabalha com diversos parceiros que oferecem benefícios aos nossos usuários. A lista completa de estabelecimentos e empresas parceiras está disponível na seção de benefícios do app, onde você também pode ver os descontos e vantagens oferecidos por cada um."
+    },
+    {
+      "id": 26,
+      "intent": "validade_beneficios",
+      "questions": [
+        "Benefícios têm validade?",
+        "Quanto tempo para usar o cupom?",
+        "Prazo dos benefícios",
+        "Cupom expira?",
+        "Até quando posso usar?"
+      ],
+      "answer": "Cada benefício resgatado pode ter condições específicas de validade. Após o resgate, você receberá todas as informações sobre prazo de uso e condições do benefício. Verifique sempre os detalhes no comprovante recebido."
+    },
+    {
+      "id": 27,
+      "intent": "compartilhar_pontos",
+      "questions": [
+        "Posso transferir pontos?",
+        "Como doar pontos?",
+        "Compartilhar pontos com amigo",
+        "Transferência de pontos",
+        "Passar pontos para outra pessoa"
+      ],
+      "answer": "Atualmente, os pontos são pessoais e vinculados à sua conta, não sendo possível transferir ou compartilhar com outros usuários. Cada pessoa deve acumular seus próprios pontos através dos descartes que realizar."
+    },
+    {
+      "id": 28,
+      "intent": "pontos_expiram",
+      "questions": [
+        "Pontos expiram?",
+        "Validade dos pontos",
+        "Perco meus pontos?",
+        "Quanto tempo duram os pontos?",
+        "Pontos vencem?"
+      ],
+      "answer": "Os pontos acumulados no Ecosrev ficam disponíveis na sua conta. Para informações específicas sobre política de expiração de pontos, consulte os termos de uso do app ou entre em contato com nosso suporte."
+    },
+    {
+      "id": 29,
+      "intent": "convite_amigos",
+      "questions": [
+        "Posso indicar amigos?",
+        "Como convidar pessoas?",
+        "Programa de indicação",
+        "Ganho pontos indicando?",
+        "Compartilhar app com amigos"
+      ],
+      "answer": "Você pode compartilhar o Ecosrev com amigos e ajudar a promover o descarte correto de resíduos eletroeletrônicos! Quanto mais pessoas utilizarem o app, maior será o impacto positivo no meio ambiente."
+    },
+    {
+      "id": 30,
+      "intent": "atualizacao_app",
+      "questions": [
+        "Como atualizar o app?",
+        "Nova versão disponível?",
+        "Atualização do Ecosrev",
+        "Preciso atualizar?",
+        "Tem update?"
+      ],
+      "answer": "Para atualizar o Ecosrev, acesse a loja de aplicativos do seu dispositivo (Google Play Store ou App Store), busque por Ecosrev e clique em atualizar caso haja uma nova versão disponível. Recomendamos manter o app sempre atualizado para ter acesso às últimas funcionalidades e melhorias."
+    }
+  ]
+}
