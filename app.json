@@ -14,7 +14,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Este app precisa acessar o microfone para reconhecimento de voz",
+        "NSSpeechRecognitionUsageDescription": "Este app precisa usar reconhecimento de fala"
+      }
     },
     "android": {
       "usesCleartextTraffic": true,
@@ -36,7 +40,14 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permitir $(PRODUCT_NAME) acessar o microfone para reconhecimento de voz.",
+          "speechRecognitionPermission": "Permitir $(PRODUCT_NAME) usar reconhecimento de fala."
+        }
+      ]
     ],
     "extra": {
       "eas": {

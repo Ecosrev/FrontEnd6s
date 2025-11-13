@@ -1,23 +1,24 @@
 // src/components/Chatbox.js
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, Platform } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import Animation from './Animation';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChat } from '../contexts/ChatContext';
-// IMPORTAÇÃO CORRIGIDA
 import { useFontSettings } from '../contexts/FontContext'; 
 import faqData from '../data/faq.json';
 
 export default function Chatbox({ visible, onClose }) {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognitionAvailable, setRecognitionAvailable] = useState(false);
+  const recognitionRef = useRef(null);
   const flatListRef = useRef();
+  const transcriptRef = useRef(''); // Usar ref ao invés de state
   
   const theme = useTheme();
-  // PEGANDO AS CONFIGURAÇÕES DE FONTE DO CONTEXTO
   const font = useFontSettings(); 
-  
   const { speakMessage } = useChat();
 
   useEffect(() => {
@@ -27,6 +28,125 @@ export default function Chatbox({ visible, onClose }) {
     }
   }, [visible]);
 
+  // Verificar se o reconhecimento de voz está disponível
+  useEffect(() => {
+    checkRecognitionAvailability();
+    
+    // Cleanup ao desmontar
+    return () => {
+      if (recognitionRef.current && Platform.OS === 'web') {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
+
+  const checkRecognitionAvailability = () => {
+    if (Platform.OS === 'web') {
+      // Verificar se o navegador suporta Web Speech API
+      const webSupport = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+      setRecognitionAvailable(webSupport);
+      
+      if (webSupport) {
+        // Inicializar Web Speech API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.lang = 'pt-BR';
+        recognitionRef.current.continuous = true; // Mudar para true para não desligar rápido
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.maxAlternatives = 1;
+        
+        recognitionRef.current.onresult = (event) => {
+          const transcript = Array.from(event.results)
+            .map(result => result[0])
+            .map(result => result.transcript)
+            .join('');
+          
+          // Apenas armazenar na ref, NÃO atualizar o campo de texto
+          transcriptRef.current = transcript;
+          
+          console.log('Transcrição:', transcript); // Debug
+        };
+        
+        recognitionRef.current.onerror = (event) => {
+          console.error('Erro no reconhecimento:', event.error);
+          setIsRecording(false);
+          
+          if (event.error !== 'no-speech' && event.error !== 'aborted') {
+            Alert.alert('Erro', 'Não foi possível reconhecer sua voz. Tente novamente.');
+          }
+        };
+        
+        recognitionRef.current.onend = () => {
+          console.log('Reconhecimento terminou. Texto:', transcriptRef.current); // Debug
+          setIsRecording(false);
+          
+          // Enviar a mensagem se houver texto
+          const finalText = transcriptRef.current.trim();
+          if (finalText) {
+            console.log('Enviando mensagem:', finalText); // Debug
+            sendMessage(finalText);
+            transcriptRef.current = ''; // Limpar a ref
+          }
+        };
+      } else {
+        console.log('Web Speech API não disponível. Use Chrome ou Edge.');
+      }
+    } else {
+      // Para mobile, assumir disponível (requer development build)
+      setRecognitionAvailable(true);
+    }
+  };
+
+  const startRecording = async () => {
+    if (!recognitionAvailable) {
+      Alert.alert(
+        'Não disponível', 
+        Platform.OS === 'web' 
+          ? 'Use o navegador Chrome ou Edge para reconhecimento de voz.'
+          : 'Reconhecimento de voz requer um development build. Não funciona no Expo Go.'
+      );
+      return;
+    }
+
+    try {
+      setIsRecording(true);
+      transcriptRef.current = ''; // Limpar transcrição anterior
+      setMessage(''); // Limpar campo de texto
+      
+      if (Platform.OS === 'web') {
+        // Usar Web Speech API nativa
+        recognitionRef.current.start();
+        console.log('Gravação iniciada'); // Debug
+      } else {
+        // Para mobile (requer development build e expo-speech-recognition)
+        Alert.alert(
+          'Development Build necessário',
+          'O reconhecimento de voz não funciona no Expo Go. Você precisa criar um development build para usar essa funcionalidade no celular.'
+        );
+        setIsRecording(false);
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar gravação:', error);
+      setIsRecording(false);
+      Alert.alert('Erro', 'Não foi possível iniciar a gravação.');
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      console.log('Parando gravação manualmente'); // Debug
+      if (Platform.OS === 'web' && recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      // O onend vai lidar com o envio da mensagem
+    } catch (error) {
+      console.error('Erro ao parar gravação:', error);
+      setIsRecording(false);
+    }
+  };
+
   const sendMessage = (text) => {
     if (!text.trim()) return;
 
@@ -34,7 +154,6 @@ export default function Chatbox({ visible, onClose }) {
     setMessages((m) => [...m, userMsg]);
     setMessage('');
 
-    // buscar resposta no JSON local
     const answer = getAnswerFromFAQ(text);
     const botMsg = { id: (Date.now() + 1).toString(), from: 'bot', text: answer };
     setMessages((m) => [...m, botMsg]);
@@ -53,7 +172,6 @@ export default function Chatbox({ visible, onClose }) {
   const renderMessage = ({ item }) => {
     const isBot = item.from === 'bot';
 
-    // Se a fonte não estiver carregada, podemos retornar null ou um placeholder
     if (!font.fontLoaded) return null; 
 
     return (
@@ -80,11 +198,10 @@ export default function Chatbox({ visible, onClose }) {
         >
           <Text
             style={[
-              // APLICANDO O TAMANHO E FAMÍLIA DE FONTE
               { 
                 fontSize: font.fontSize.md, 
-                lineHeight: font.fontSize.md + 5, // Ajuste dinâmico do line height
-                fontFamily: font.fontFamily, // Aplica a família de fonte
+                lineHeight: font.fontSize.md + 5,
+                fontFamily: font.fontFamily,
                 color: isBot ? theme.colors.text.primary : theme.colors.text.inverse 
               }
             ]}
@@ -110,7 +227,7 @@ export default function Chatbox({ visible, onClose }) {
     );
   };
 
-  if (!visible || !font.fontLoaded) return null; // Garante que a fonte esteja carregada antes de renderizar
+  if (!visible || !font.fontLoaded) return null;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -122,12 +239,11 @@ export default function Chatbox({ visible, onClose }) {
               <Animation />
               <Text 
                 style={[
-                  // APLICANDO O TAMANHO E FAMÍLIA DE FONTE
                   { 
                     fontSize: font.fontSize.lg, 
                     fontWeight: '600', 
                     marginLeft: 12, 
-                    fontFamily: font.fontFamily, // Aplica a família de fonte
+                    fontFamily: font.fontFamily,
                     color: theme.colors.text.primary 
                   }
                 ]}
@@ -161,19 +277,18 @@ export default function Chatbox({ visible, onClose }) {
           <View style={[styles.inputContainer, { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
             <TextInput
               style={[
-                // APLICANDO O TAMANHO E FAMÍLIA DE FONTE
                 {
                   flex: 1,
                   marginHorizontal: 8,
                   padding: 12,
                   borderRadius: theme.borderRadius.round,
                   fontSize: font.fontSize.md,
-                  fontFamily: font.fontFamily, // Aplica a família de fonte
+                  fontFamily: font.fontFamily,
                   backgroundColor: theme.colors.surface,
                   color: theme.colors.text.primary,
                 },
               ]}
-              placeholder="Digite sua mensagem..."
+              placeholder="Digite ou fale sua mensagem..."
               placeholderTextColor={theme.colors.text.secondary}
               value={message}
               onChangeText={setMessage}
@@ -181,6 +296,22 @@ export default function Chatbox({ visible, onClose }) {
               multiline
             />
 
+            {/* Botão de Microfone */}
+            <TouchableOpacity
+              style={[
+                styles.micButton,
+                isRecording && { backgroundColor: theme.colors.error }
+              ]}
+              onPress={isRecording ? stopRecording : startRecording}
+            >
+              <IconButton
+                icon={isRecording ? "stop" : "microphone"}
+                size={24}
+                iconColor={isRecording ? "#fff" : theme.colors.primary}
+              />
+            </TouchableOpacity>
+
+            {/* Botão de Enviar */}
             <TouchableOpacity
               style={styles.sendButton}
               onPress={() => sendMessage(message)}
@@ -197,13 +328,19 @@ export default function Chatbox({ visible, onClose }) {
               />
             </TouchableOpacity>
           </View>
+
+          {/* Indicador de Gravação */}
+          {isRecording && (
+            <View style={[styles.recordingIndicator, { backgroundColor: theme.colors.error }]}>
+              <Text style={styles.recordingText}>🎤 Ouvindo...</Text>
+            </View>
+          )}
         </View>
       </View>
     </Modal>
   );
 }
 
-// O objeto styles.create permanece o mesmo do seu último código (sem fontes fixas)
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -244,6 +381,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   
+  botMessageContainer: {
+    justifyContent: 'flex-start',
+  },
+
+  userMessageContainer: {
+    justifyContent: 'flex-end',
+  },
+  
   botAvatar: {
     marginRight: 8,
   },
@@ -272,8 +417,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
   },
+
+  micButton: {
+    padding: 4,
+    borderRadius: 20,
+  },
   
   sendButton: {
     padding: 4,
+  },
+
+  recordingIndicator: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+
+  recordingText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
