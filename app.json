@@ -1,7 +1,25 @@
 {
   "expo": {
-    "name": "Ecosrev",
+    "name": "EcosRev",
     "slug": "ecosrev",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#fafafa"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Este app precisa acessar o microfone para reconhecimento de voz",
+        "NSSpeechRecognitionUsageDescription": "Este app precisa usar reconhecimento de fala"
+      }
+    },
     "android": {
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
@@ -33,7 +51,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a5c946f2-fbd0-422a-958f-8b11a7523b36"
+        "projectId": "1fe31fa5-111b-4650-aaed-a9c048328ef8"
       }
     }
   }
