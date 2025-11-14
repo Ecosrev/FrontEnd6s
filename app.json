@@ -42,7 +42,7 @@
       ],
       "expo-font",
       [
-        "expo-speech-recognition",
+        "@react-native-voice/voice",
         {
           "microphonePermission": "Permitir $(PRODUCT_NAME) acessar o microfone para reconhecimento de voz.",
           "speechRecognitionPermission": "Permitir $(PRODUCT_NAME) usar reconhecimento de fala."

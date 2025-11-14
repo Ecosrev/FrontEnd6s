@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, Platform } from 'react-native';
 import { IconButton } from 'react-native-paper';
+import Voice from '@react-native-voice/voice';
 import Animation from './Animation';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChat } from '../contexts/ChatContext';
@@ -13,9 +14,8 @@ export default function Chatbox({ visible, onClose }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionAvailable, setRecognitionAvailable] = useState(false);
-  const recognitionRef = useRef(null);
   const flatListRef = useRef();
-  const transcriptRef = useRef(''); // Usar ref ao invés de state
+  const transcriptRef = useRef('');
   
   const theme = useTheme();
   const font = useFontSettings(); 
@@ -28,74 +28,70 @@ export default function Chatbox({ visible, onClose }) {
     }
   }, [visible]);
 
-  // Verificar se o reconhecimento de voz está disponível
+  // Configurar react-native-voice
   useEffect(() => {
-    checkRecognitionAvailability();
-    
+    // Verificar disponibilidade
+    Voice.isAvailable()
+      .then(available => {
+        setRecognitionAvailable(available === 1);
+      })
+      .catch(err => {
+        console.error('Erro ao verificar Voice disponibilidade:', err);
+        setRecognitionAvailable(false);
+      });
+
+    // Configurar eventos do Voice
+    Voice.onSpeechStart = onSpeechStart;
+    Voice.onSpeechEnd = onSpeechEnd;
+    Voice.onSpeechResults = onSpeechResults;
+    Voice.onSpeechPartialResults = onSpeechPartialResults;
+    Voice.onSpeechError = onSpeechError;
+
     // Cleanup ao desmontar
     return () => {
-      if (recognitionRef.current && Platform.OS === 'web') {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-      }
+      Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
 
-  const checkRecognitionAvailability = () => {
-    if (Platform.OS === 'web') {
-      // Verificar se o navegador suporta Web Speech API
-      const webSupport = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-      setRecognitionAvailable(webSupport);
+  const onSpeechStart = (e) => {
+    console.log('Gravação iniciada:', e);
+  };
+
+  const onSpeechEnd = (e) => {
+    console.log('Gravação terminada:', e);
+    setIsRecording(false);
+  };
+
+  const onSpeechResults = (e) => {
+    console.log('Resultados finais:', e.value);
+    if (e.value && e.value.length > 0) {
+      const finalText = e.value[0];
+      transcriptRef.current = finalText;
       
-      if (webSupport) {
-        // Inicializar Web Speech API
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.lang = 'pt-BR';
-        recognitionRef.current.continuous = true; // Mudar para true para não desligar rápido
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.maxAlternatives = 1;
-        
-        recognitionRef.current.onresult = (event) => {
-          const transcript = Array.from(event.results)
-            .map(result => result[0])
-            .map(result => result.transcript)
-            .join('');
-          
-          // Apenas armazenar na ref, NÃO atualizar o campo de texto
-          transcriptRef.current = transcript;
-          
-          console.log('Transcrição:', transcript); // Debug
-        };
-        
-        recognitionRef.current.onerror = (event) => {
-          console.error('Erro no reconhecimento:', event.error);
-          setIsRecording(false);
-          
-          if (event.error !== 'no-speech' && event.error !== 'aborted') {
-            Alert.alert('Erro', 'Não foi possível reconhecer sua voz. Tente novamente.');
-          }
-        };
-        
-        recognitionRef.current.onend = () => {
-          console.log('Reconhecimento terminou. Texto:', transcriptRef.current); // Debug
-          setIsRecording(false);
-          
-          // Enviar a mensagem se houver texto
-          const finalText = transcriptRef.current.trim();
-          if (finalText) {
-            console.log('Enviando mensagem:', finalText); // Debug
-            sendMessage(finalText);
-            transcriptRef.current = ''; // Limpar a ref
-          }
-        };
-      } else {
-        console.log('Web Speech API não disponível. Use Chrome ou Edge.');
+      // Enviar a mensagem automaticamente
+      if (finalText.trim()) {
+        sendMessage(finalText);
+        transcriptRef.current = '';
       }
-    } else {
-      // Para mobile, assumir disponível (requer development build)
-      setRecognitionAvailable(true);
+    }
+  };
+
+  const onSpeechPartialResults = (e) => {
+    console.log('Resultados parciais:', e.value);
+    if (e.value && e.value.length > 0) {
+      transcriptRef.current = e.value[0];
+      // Opcional: mostrar transcrição em tempo real
+      // setMessage(e.value[0]);
+    }
+  };
+
+  const onSpeechError = (e) => {
+    console.error('Erro no reconhecimento de voz:', e.error);
+    setIsRecording(false);
+    
+    // Não mostrar alerta para erros comuns
+    if (e.error.code !== '7' && e.error.code !== 'no-speech') {
+      Alert.alert('Erro', `Não foi possível reconhecer sua voz: ${e.error.message || 'Tente novamente.'}`);
     }
   };
 
@@ -103,44 +99,44 @@ export default function Chatbox({ visible, onClose }) {
     if (!recognitionAvailable) {
       Alert.alert(
         'Não disponível', 
-        Platform.OS === 'web' 
-          ? 'Use o navegador Chrome ou Edge para reconhecimento de voz.'
-          : 'Reconhecimento de voz requer um development build. Não funciona no Expo Go.'
+        'Reconhecimento de voz não está disponível neste dispositivo.'
       );
       return;
     }
 
     try {
-      setIsRecording(true);
-      transcriptRef.current = ''; // Limpar transcrição anterior
-      setMessage(''); // Limpar campo de texto
+      // Parar qualquer gravação anterior
+      await Voice.stop();
+      await Voice.cancel();
       
-      if (Platform.OS === 'web') {
-        // Usar Web Speech API nativa
-        recognitionRef.current.start();
-        console.log('Gravação iniciada'); // Debug
-      } else {
-        // Para mobile (requer development build e expo-speech-recognition)
-        Alert.alert(
-          'Development Build necessário',
-          'O reconhecimento de voz não funciona no Expo Go. Você precisa criar um development build para usar essa funcionalidade no celular.'
-        );
-        setIsRecording(false);
-      }
+      // Limpar estados
+      transcriptRef.current = '';
+      setMessage('');
+      setIsRecording(true);
+      
+      // Iniciar reconhecimento
+      await Voice.start('pt-BR');
+      console.log('Gravação iniciada com sucesso');
+      
     } catch (error) {
       console.error('Erro ao iniciar gravação:', error);
       setIsRecording(false);
-      Alert.alert('Erro', 'Não foi possível iniciar a gravação.');
+      Alert.alert('Erro', 'Não foi possível iniciar a gravação. Verifique as permissões de microfone.');
     }
   };
 
   const stopRecording = async () => {
     try {
-      console.log('Parando gravação manualmente'); // Debug
-      if (Platform.OS === 'web' && recognitionRef.current) {
-        recognitionRef.current.stop();
+      console.log('Parando gravação manualmente');
+      await Voice.stop();
+      setIsRecording(false);
+      
+      // Enviar mensagem se houver transcrição
+      const finalText = transcriptRef.current.trim();
+      if (finalText) {
+        sendMessage(finalText);
+        transcriptRef.current = '';
       }
-      // O onend vai lidar com o envio da mensagem
     } catch (error) {
       console.error('Erro ao parar gravação:', error);
       setIsRecording(false);
