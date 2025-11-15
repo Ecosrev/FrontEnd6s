@@ -1,8 +1,10 @@
-// src/components/Chatbox.js
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, Platform } from 'react-native';
+import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { IconButton } from 'react-native-paper';
-import Voice from '@react-native-voice/voice';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 import Animation from './Animation';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChat } from '../contexts/ChatContext';
@@ -15,7 +17,6 @@ export default function Chatbox({ visible, onClose }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionAvailable, setRecognitionAvailable] = useState(false);
   const flatListRef = useRef();
-  const transcriptRef = useRef('');
   
   const theme = useTheme();
   const font = useFontSettings(); 
@@ -28,72 +29,46 @@ export default function Chatbox({ visible, onClose }) {
     }
   }, [visible]);
 
-  // Configurar react-native-voice
+  // Verificar disponibilidade
   useEffect(() => {
-    // Verificar disponibilidade
-    Voice.isAvailable()
-      .then(available => {
-        setRecognitionAvailable(available === 1);
-      })
-      .catch(err => {
-        console.error('Erro ao verificar Voice disponibilidade:', err);
-        setRecognitionAvailable(false);
-      });
-
-    // Configurar eventos do Voice
-    Voice.onSpeechStart = onSpeechStart;
-    Voice.onSpeechEnd = onSpeechEnd;
-    Voice.onSpeechResults = onSpeechResults;
-    Voice.onSpeechPartialResults = onSpeechPartialResults;
-    Voice.onSpeechError = onSpeechError;
-
-    // Cleanup ao desmontar
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
+    ExpoSpeechRecognitionModule.getStateAsync().then((state) => {
+      setRecognitionAvailable(state.available);
+    });
   }, []);
 
-  const onSpeechStart = (e) => {
-    console.log('Gravação iniciada:', e);
-  };
+  // Eventos de reconhecimento de voz
+  useSpeechRecognitionEvent('start', () => {
+    console.log('Gravação iniciada');
+    setIsRecording(true);
+  });
 
-  const onSpeechEnd = (e) => {
-    console.log('Gravação terminada:', e);
+  useSpeechRecognitionEvent('end', () => {
+    console.log('Gravação terminada');
     setIsRecording(false);
-  };
+  });
 
-  const onSpeechResults = (e) => {
-    console.log('Resultados finais:', e.value);
-    if (e.value && e.value.length > 0) {
-      const finalText = e.value[0];
-      transcriptRef.current = finalText;
+  useSpeechRecognitionEvent('result', (event) => {
+    console.log('Resultado:', event.results);
+    const transcript = event.results[0]?.transcript;
+    
+    if (transcript) {
+      setMessage(transcript);
       
-      // Enviar a mensagem automaticamente
-      if (finalText.trim()) {
-        sendMessage(finalText);
-        transcriptRef.current = '';
+      // Se for resultado final, enviar automaticamente
+      if (event.isFinal) {
+        sendMessage(transcript);
       }
     }
-  };
+  });
 
-  const onSpeechPartialResults = (e) => {
-    console.log('Resultados parciais:', e.value);
-    if (e.value && e.value.length > 0) {
-      transcriptRef.current = e.value[0];
-      // Opcional: mostrar transcrição em tempo real
-      // setMessage(e.value[0]);
-    }
-  };
-
-  const onSpeechError = (e) => {
-    console.error('Erro no reconhecimento de voz:', e.error);
+  useSpeechRecognitionEvent('error', (event) => {
+    console.error('Erro no reconhecimento:', event.error);
     setIsRecording(false);
     
-    // Não mostrar alerta para erros comuns
-    if (e.error.code !== '7' && e.error.code !== 'no-speech') {
-      Alert.alert('Erro', `Não foi possível reconhecer sua voz: ${e.error.message || 'Tente novamente.'}`);
+    if (event.error !== 'no-speech') {
+      Alert.alert('Erro', `Não foi possível reconhecer sua voz: ${event.message || 'Tente novamente.'}`);
     }
-  };
+  });
 
   const startRecording = async () => {
     if (!recognitionAvailable) {
@@ -105,40 +80,40 @@ export default function Chatbox({ visible, onClose }) {
     }
 
     try {
-      // Parar qualquer gravação anterior
-      await Voice.stop();
-      await Voice.cancel();
+      const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       
-      // Limpar estados
-      transcriptRef.current = '';
+      if (status !== 'granted') {
+        Alert.alert('Permissão negada', 'É necessário permitir o uso do microfone.');
+        return;
+      }
+
+      // Limpar campo de mensagem
       setMessage('');
-      setIsRecording(true);
       
       // Iniciar reconhecimento
-      await Voice.start('pt-BR');
-      console.log('Gravação iniciada com sucesso');
+      await ExpoSpeechRecognitionModule.start({
+        lang: 'pt-BR',
+        interimResults: true, // Resultados em tempo real
+        maxAlternatives: 1,
+        continuous: false, // Para após detectar silêncio
+        requiresOnDeviceRecognition: false,
+      });
+      
+      console.log('Reconhecimento iniciado com sucesso');
       
     } catch (error) {
-      console.error('Erro ao iniciar gravação:', error);
+      console.error('Erro ao iniciar reconhecimento:', error);
       setIsRecording(false);
-      Alert.alert('Erro', 'Não foi possível iniciar a gravação. Verifique as permissões de microfone.');
+      Alert.alert('Erro', 'Não foi possível iniciar o reconhecimento de voz.');
     }
   };
 
   const stopRecording = async () => {
     try {
-      console.log('Parando gravação manualmente');
-      await Voice.stop();
+      await ExpoSpeechRecognitionModule.stop();
       setIsRecording(false);
-      
-      // Enviar mensagem se houver transcrição
-      const finalText = transcriptRef.current.trim();
-      if (finalText) {
-        sendMessage(finalText);
-        transcriptRef.current = '';
-      }
     } catch (error) {
-      console.error('Erro ao parar gravação:', error);
+      console.error('Erro ao parar reconhecimento:', error);
       setIsRecording(false);
     }
   };
@@ -162,7 +137,7 @@ export default function Chatbox({ visible, onClose }) {
       );
       if (match) return intent.answer;
     }
-    return "Desculpe, não entendi — tente reformular a pergunta.";
+    return "Desculpe, não entendi – tente reformular a pergunta.";
   };
 
   const renderMessage = ({ item }) => {
