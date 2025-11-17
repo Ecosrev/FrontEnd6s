@@ -1,5 +1,10 @@
 {
   "expo": {
+    "name": "EcosRev",
+    "slug": "ecosrev",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "plugins": [
       [
         "expo-build-properties",
@@ -10,7 +15,13 @@
           }
         }
       ],
-      "expo-speech-recognition"
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow EcosRev to access your microphone",
+          "speechRecognitionPermission": "Allow EcosRev to use speech recognition"
+        }
+      ]
     ],
     "extra": {
       "eas": {

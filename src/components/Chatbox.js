@@ -29,12 +29,25 @@ export default function Chatbox({ visible, onClose }) {
     }
   }, [visible]);
 
-  // Verificar disponibilidade
+  // Verificar disponibilidade e permissões
   useEffect(() => {
-    ExpoSpeechRecognitionModule.getStateAsync().then((state) => {
-      setRecognitionAvailable(state.available);
-    });
+    checkAvailability();
   }, []);
+
+  const checkAvailability = async () => {
+    try {
+      // Primeiro, verifica se o módulo está disponível
+      const result = await ExpoSpeechRecognitionModule.getSupportedLocales();
+      
+      // Se chegou aqui, o reconhecimento está disponível
+      setRecognitionAvailable(true);
+      console.log('Reconhecimento de voz disponível');
+      
+    } catch (error) {
+      console.log('Reconhecimento de voz não disponível:', error);
+      setRecognitionAvailable(false);
+    }
+  };
 
   // Eventos de reconhecimento de voz
   useSpeechRecognitionEvent('start', () => {
@@ -71,26 +84,20 @@ export default function Chatbox({ visible, onClose }) {
   });
 
   const startRecording = async () => {
-    if (!recognitionAvailable) {
-      Alert.alert(
-        'Não disponível', 
-        'Reconhecimento de voz não está disponível neste dispositivo.'
-      );
-      return;
-    }
-
     try {
+      // Solicitar permissões primeiro
       const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permissão negada', 'É necessário permitir o uso do microfone.');
+        Alert.alert('Permissão negada', 'É necessário permitir o uso do microfone para usar o reconhecimento de voz.');
         return;
       }
 
       // Limpar campo de mensagem
       setMessage('');
       
-      // Iniciar reconhecimento
+      // Tentar iniciar reconhecimento diretamente
+      // O módulo vai verificar internamente se está disponível
       await ExpoSpeechRecognitionModule.start({
         lang: 'pt-BR',
         interimResults: true, // Resultados em tempo real
@@ -104,7 +111,18 @@ export default function Chatbox({ visible, onClose }) {
     } catch (error) {
       console.error('Erro ao iniciar reconhecimento:', error);
       setIsRecording(false);
-      Alert.alert('Erro', 'Não foi possível iniciar o reconhecimento de voz.');
+      
+      // Mensagem de erro mais específica
+      const errorMessage = error.message || error.toString();
+      
+      if (errorMessage.includes('not available') || errorMessage.includes('não disponível')) {
+        Alert.alert(
+          'Não disponível', 
+          'O reconhecimento de voz não está disponível. Verifique se os Serviços do Google estão atualizados nas configurações do seu dispositivo.'
+        );
+      } else {
+        Alert.alert('Erro', `Não foi possível iniciar o reconhecimento de voz: ${errorMessage}`);
+      }
     }
   };
 
