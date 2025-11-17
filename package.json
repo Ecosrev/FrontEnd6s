@@ -7,7 +7,10 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "start:all": "concurrently \"npm --prefix back run dev\" \"cd back/api-hist && node src/server.js\" \"npx expo start\""
+    "start:all": "concurrently \"npm --prefix back run dev\" \"cd back/api-hist && node src/server.js\" \"npx expo start\"",
+    "test": "npx jest",
+    "test:watch": "npx jest --watch",
+    "test:coverage": "npx jest --coverage"
   },
   "dependencies": {
     "@expo-google-fonts/lato": "^0.3.0",
@@ -21,7 +24,7 @@
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
     "axios": "^1.9.0",
-    "expo": "54.0.23",
+    "expo": "^51.0.39",
     "expo-build-properties": "~1.0.9",
     "expo-camera": "~17.0.9",
     "expo-font": "~14.0.8",
@@ -45,12 +48,64 @@
     "react-native-svg-transformer": "^1.5.1",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.5.1",
-    "update": "^0.4.2",
+    "update": "^0.7.4",
     "yup": "^1.6.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "concurrently": "^9.1.2"
+    "@babel/core": "^7.28.5",
+    "@babel/plugin-transform-class-properties": "^7.27.1",
+    "@babel/plugin-transform-flow-strip-types": "^7.27.1",
+    "@babel/plugin-transform-private-methods": "^7.27.1",
+    "@babel/plugin-transform-private-property-in-object": "^7.27.1",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/runtime": "^7.28.4",
+    "@react-native/babel-preset": "^0.82.1",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "babel-jest": "^30.2.0",
+    "concurrently": "^9.1.2",
+    "metro-react-native-babel-preset": "^0.77.0",
+    "react-test-renderer": "^19.1.0"
+  },
+  "jest": {
+    "preset": "react-native",
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/android/",
+      "/ios/"
+    ],
+    "transformIgnorePatterns": [
+      "node_modules/(?!(react-native|@react-native|@react-navigation|react-native-safe-area-context|@testing-library)/)"
+    ],
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "js",
+      "jsx",
+      "json",
+      "ts",
+      "tsx"
+    ],
+    "moduleNameMapper": {
+      "\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.test.{js,jsx,ts,tsx}",
+      "!src/**/__tests__/**",
+      "!src/index.{js,jsx,ts,tsx}",
+      "!**/node_modules/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "lines": 80,
+        "statements": 80,
+        "functions": 80,
+        "branches": 80
+      }
+    }
   },
   "private": true
 }
