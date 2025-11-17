@@ -25,11 +25,14 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "a5c946f2-fbd0-422a-958f-8b11a7523b36"
+        "projectId": "14753a07-e548-40ce-8cc0-8daecb802e26"
       }
     },
     "android": {
-      "package": "com.joaolucas54321.ecosrev"
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.jaolucas.ecosrev"
     }
   }
 }
