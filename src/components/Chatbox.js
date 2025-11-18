@@ -148,14 +148,85 @@ export default function Chatbox({ visible, onClose }) {
     setMessages((m) => [...m, botMsg]);
   };
 
+  const normalizeText = (text) => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^\w\s]/g, '') // Remove pontuação
+      .trim();
+  };
+
   const getAnswerFromFAQ = (userText) => {
+    const normalizedUserText = normalizeText(userText);
+    
+    // 1. Tentar match exato primeiro
     for (let intent of faqData.intents) {
-      const match = intent.questions.find(
-        q => q.toLowerCase() === userText.toLowerCase()
+      const exactMatch = intent.questions.find(
+        q => normalizeText(q) === normalizedUserText
       );
-      if (match) return intent.answer;
+      if (exactMatch) return intent.answer;
     }
-    return "Desculpe, não entendi – tente reformular a pergunta.";
+    
+    // 2. Tentar match parcial (contém as palavras-chave)
+    for (let intent of faqData.intents) {
+      const partialMatch = intent.questions.find(q => {
+        const normalizedQuestion = normalizeText(q);
+        const userWords = normalizedUserText.split(' ');
+        
+        // Se 70% ou mais das palavras do usuário estão na pergunta
+        const matchingWords = userWords.filter(word => 
+          word.length > 2 && normalizedQuestion.includes(word)
+        );
+        
+        return matchingWords.length >= Math.ceil(userWords.length * 0.5);
+      });
+      
+      if (partialMatch) return intent.answer;
+    }
+    
+    // 3. Busca por palavras-chave importantes
+    const keywords = {
+      'cadastro': [1, 2],
+      'login': [3],
+      'senha': [4, 5],
+      'pontos': [6, 10, 23, 28],
+      'qr': [7, 22],
+      'qrcode': [7, 22],
+      'beneficios': [8, 9, 26],
+      'resgatar': [9, 23],
+      'historico': [11],
+      'perfil': [12],
+      'sair': [13],
+      'acessibilidade': [14],
+      'fonte': [14],
+      'descartar': [15, 16],
+      'residuos': [15],
+      'lixo': [15],
+      'eletronico': [15],
+      'coleta': [16],
+      'ponto': [16],
+      'seguranca': [17],
+      'dados': [17],
+      'problema': [18],
+      'erro': [18],
+      'bug': [18],
+      'suporte': [19],
+      'ajuda': [19],
+      'contato': [19],
+      'reciclar': [20],
+      'reciclagem': [20],
+      'ambiental': [20],
+    };
+    
+    for (let [keyword, intentIds] of Object.entries(keywords)) {
+      if (normalizedUserText.includes(keyword)) {
+        const intent = faqData.intents.find(i => intentIds.includes(i.id));
+        if (intent) return intent.answer;
+      }
+    }
+    
+    return "Desculpe, não entendi – tente reformular a pergunta. Você pode perguntar sobre cadastro, login, pontos, QR code, benefícios, descarte de resíduos, entre outros assuntos.";
   };
 
   const renderMessage = ({ item }) => {
