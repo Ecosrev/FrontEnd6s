@@ -36,10 +36,9 @@ export default function Chatbox({ visible, onClose }) {
 
   const checkAvailability = async () => {
     try {
-      // Primeiro, verifica se o módulo está disponível
+  
       const result = await ExpoSpeechRecognitionModule.getSupportedLocales();
       
-      // Se chegou aqui, o reconhecimento está disponível
       setRecognitionAvailable(true);
       console.log('Reconhecimento de voz disponível');
       
@@ -49,7 +48,7 @@ export default function Chatbox({ visible, onClose }) {
     }
   };
 
-  // Eventos de reconhecimento de voz
+
   useSpeechRecognitionEvent('start', () => {
     console.log('Gravação iniciada');
     setIsRecording(true);
@@ -67,7 +66,7 @@ export default function Chatbox({ visible, onClose }) {
     if (transcript) {
       setMessage(transcript);
       
-      // Se for resultado final, enviar automaticamente
+  
       if (event.isFinal) {
         sendMessage(transcript);
       }
@@ -85,7 +84,7 @@ export default function Chatbox({ visible, onClose }) {
 
   const startRecording = async () => {
     try {
-      // Solicitar permissões primeiro
+  
       const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       
       if (status !== 'granted') {
@@ -93,16 +92,16 @@ export default function Chatbox({ visible, onClose }) {
         return;
       }
 
-      // Limpar campo de mensagem
+   
       setMessage('');
       
       // Tentar iniciar reconhecimento diretamente
       // O módulo vai verificar internamente se está disponível
       await ExpoSpeechRecognitionModule.start({
         lang: 'pt-BR',
-        interimResults: true, // Resultados em tempo real
+        interimResults: true,
         maxAlternatives: 1,
-        continuous: false, // Para após detectar silêncio
+        continuous: false, 
         requiresOnDeviceRecognition: false,
       });
       
