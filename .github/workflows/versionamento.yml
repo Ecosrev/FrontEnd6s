@@ -1,5 +1,8 @@
 name: Versionamento Automático por Commits
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
