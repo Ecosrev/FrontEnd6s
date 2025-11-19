@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
+import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { IconButton } from 'react-native-paper';
 import {
   ExpoSpeechRecognitionModule,
@@ -290,7 +290,11 @@ export default function Chatbox({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+      style={styles.overlay}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}>
@@ -395,23 +399,24 @@ export default function Chatbox({ visible, onClose }) {
             </View>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  
-  container: {
-    height: '70%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+},
+
+container: {
+  flex: 1,
+  marginTop: 'auto',
+  maxHeight: '80%',
+  borderTopLeftRadius: 20,
+  borderTopRightRadius: 20,
+},
   
   header: {
     flexDirection: 'row',

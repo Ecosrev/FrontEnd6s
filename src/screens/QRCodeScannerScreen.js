@@ -118,7 +118,6 @@ export default function QRCodeScanner() {
 
   const handleBarCodeScanned = async ({ data }) => {
     if (scanningRef.current) return;
-    
     scanningRef.current = true;
 
     try {

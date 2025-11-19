@@ -1,0 +1,63 @@
+name: Versionamento Automático por Commits
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Obter última tag
+        id: last_tag
+        run: |
+          tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Obter mensagem do último commit
+        id: commit_msg
+        run: |
+          echo "msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+
+      - name: Calcular próxima versão
+        id: new_version
+        run: |
+          msg="${{ steps.commit_msg.outputs.msg }}"
+          tag="${{ steps.last_tag.outputs.tag }}"
+
+          echo "Commit: $msg"
+          echo "Última tag: $tag"
+
+          version="${tag#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+
+          if [[ "$msg" =~ ^BREAKING\ CHANGE ]]; then
+            ((major+=1))
+            minor=0
+            patch=0
+          elif [[ "$msg" =~ ^feat ]]; then
+            ((minor+=1))
+            patch=0
+          elif [[ "$msg" =~ ^fix ]]; then
+            ((patch+=1))
+          else
+            echo "Nenhum padrão encontrado, não será criada nova versão."
+            echo "version=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          next="v${major}.${minor}.${patch}"
+          echo "version=$next" >> $GITHUB_OUTPUT
+
+      - name: Criar nova tag
+        if: ${{ steps.new_version.outputs.version != '' }}
+        run: |
+          git tag -a "${{ steps.new_version.outputs.version }}" -m "Release ${{ steps.new_version.outputs.version }}"
+          git push origin "${{ steps.new_version.outputs.version }}"
