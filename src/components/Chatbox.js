@@ -8,7 +8,7 @@ import {
 import Animation from './Animation';
 import { useTheme } from '../contexts/ThemeContext';
 import { useChat } from '../contexts/ChatContext';
-import { useFontSettings } from '../contexts/FontContext'; 
+import { useFontSettings } from '../contexts/FontContext';
 import faqData from '../data/faq.json';
 
 export default function Chatbox({ visible, onClose }) {
@@ -17,9 +17,9 @@ export default function Chatbox({ visible, onClose }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionAvailable, setRecognitionAvailable] = useState(false);
   const flatListRef = useRef();
-  
+
   const theme = useTheme();
-  const font = useFontSettings(); 
+  const font = useFontSettings();
   const { speakMessage } = useChat();
 
   useEffect(() => {
@@ -36,12 +36,12 @@ export default function Chatbox({ visible, onClose }) {
 
   const checkAvailability = async () => {
     try {
-  
+
       const result = await ExpoSpeechRecognitionModule.getSupportedLocales();
-      
+
       setRecognitionAvailable(true);
       console.log('Reconhecimento de voz disponível');
-      
+
     } catch (error) {
       console.log('Reconhecimento de voz não disponível:', error);
       setRecognitionAvailable(false);
@@ -62,11 +62,11 @@ export default function Chatbox({ visible, onClose }) {
   useSpeechRecognitionEvent('result', (event) => {
     console.log('Resultado:', event.results);
     const transcript = event.results[0]?.transcript;
-    
+
     if (transcript) {
       setMessage(transcript);
-      
-  
+
+
       if (event.isFinal) {
         sendMessage(transcript);
       }
@@ -76,7 +76,7 @@ export default function Chatbox({ visible, onClose }) {
   useSpeechRecognitionEvent('error', (event) => {
     console.error('Erro no reconhecimento:', event.error);
     setIsRecording(false);
-    
+
     if (event.error !== 'no-speech') {
       Alert.alert('Erro', `Não foi possível reconhecer sua voz: ${event.message || 'Tente novamente.'}`);
     }
@@ -84,39 +84,39 @@ export default function Chatbox({ visible, onClose }) {
 
   const startRecording = async () => {
     try {
-  
+
       const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
-      
+
       if (status !== 'granted') {
         Alert.alert('Permissão negada', 'É necessário permitir o uso do microfone para usar o reconhecimento de voz.');
         return;
       }
 
-   
+
       setMessage('');
-      
+
       // Tentar iniciar reconhecimento diretamente
       // O módulo vai verificar internamente se está disponível
       await ExpoSpeechRecognitionModule.start({
         lang: 'pt-BR',
         interimResults: true,
         maxAlternatives: 1,
-        continuous: false, 
+        continuous: false,
         requiresOnDeviceRecognition: false,
       });
-      
+
       console.log('Reconhecimento iniciado com sucesso');
-      
+
     } catch (error) {
       console.error('Erro ao iniciar reconhecimento:', error);
       setIsRecording(false);
-      
+
       // Mensagem de erro mais específica
       const errorMessage = error.message || error.toString();
-      
+
       if (errorMessage.includes('not available') || errorMessage.includes('não disponível')) {
         Alert.alert(
-          'Não disponível', 
+          'Não disponível',
           'O reconhecimento de voz não está disponível. Verifique se os Serviços do Google estão atualizados nas configurações do seu dispositivo.'
         );
       } else {
@@ -158,7 +158,7 @@ export default function Chatbox({ visible, onClose }) {
 
   const getAnswerFromFAQ = (userText) => {
     const normalizedUserText = normalizeText(userText);
-    
+
     // 1. Tentar match exato primeiro
     for (let intent of faqData.intents) {
       const exactMatch = intent.questions.find(
@@ -166,24 +166,24 @@ export default function Chatbox({ visible, onClose }) {
       );
       if (exactMatch) return intent.answer;
     }
-    
+
     // 2. Tentar match parcial (contém as palavras-chave)
     for (let intent of faqData.intents) {
       const partialMatch = intent.questions.find(q => {
         const normalizedQuestion = normalizeText(q);
         const userWords = normalizedUserText.split(' ');
-        
+
         // Se 70% ou mais das palavras do usuário estão na pergunta
-        const matchingWords = userWords.filter(word => 
+        const matchingWords = userWords.filter(word =>
           word.length > 2 && normalizedQuestion.includes(word)
         );
-        
+
         return matchingWords.length >= Math.ceil(userWords.length * 0.5);
       });
-      
+
       if (partialMatch) return intent.answer;
     }
-    
+
     // 3. Busca por palavras-chave importantes
     const keywords = {
       'cadastro': [1, 2],
@@ -217,21 +217,21 @@ export default function Chatbox({ visible, onClose }) {
       'reciclagem': [20],
       'ambiental': [20],
     };
-    
+
     for (let [keyword, intentIds] of Object.entries(keywords)) {
       if (normalizedUserText.includes(keyword)) {
         const intent = faqData.intents.find(i => intentIds.includes(i.id));
         if (intent) return intent.answer;
       }
     }
-    
+
     return "Desculpe, não entendi – tente reformular a pergunta. Você pode perguntar sobre cadastro, login, pontos, QR code, benefícios, descarte de resíduos, entre outros assuntos.";
   };
 
   const renderMessage = ({ item }) => {
     const isBot = item.from === 'bot';
 
-    if (!font.fontLoaded) return null; 
+    if (!font.fontLoaded) return null;
 
     return (
       <View
@@ -257,11 +257,11 @@ export default function Chatbox({ visible, onClose }) {
         >
           <Text
             style={[
-              { 
-                fontSize: font.fontSize.md, 
+              {
+                fontSize: font.fontSize.md,
                 lineHeight: font.fontSize.md + 5,
                 fontFamily: font.fontFamily,
-                color: isBot ? theme.colors.text.primary : theme.colors.text.inverse 
+                color: isBot ? theme.colors.text.primary : theme.colors.text.inverse
               }
             ]}
           >
@@ -290,24 +290,24 @@ export default function Chatbox({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView 
-      style={styles.overlay}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
-    >
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+      >
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}>
             <View style={styles.headerLeft}>
               <Animation />
-              <Text 
+              <Text
                 style={[
-                  { 
-                    fontSize: font.fontSize.lg, 
-                    fontWeight: '600', 
-                    marginLeft: 12, 
+                  {
+                    fontSize: font.fontSize.lg,
+                    fontWeight: '600',
+                    marginLeft: 12,
                     fontFamily: font.fontFamily,
-                    color: theme.colors.text.primary 
+                    color: theme.colors.text.primary
                   }
                 ]}
               >
@@ -406,45 +406,45 @@ export default function Chatbox({ visible, onClose }) {
 
 const styles = StyleSheet.create({
   overlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-},
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
 
-container: {
-  flex: 1,
-  marginTop: 'auto',
-  maxHeight: '80%',
-  borderTopLeftRadius: 20,
-  borderTopRightRadius: 20,
-},
-  
+  container: {
+    flex: 1,
+    marginTop: 'auto',
+    maxHeight: '80%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
   },
-  
+
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
   content: {
     flex: 1,
   },
-  
+
   messages: {
     padding: 16,
     flexGrow: 1,
   },
-  
+
   messageContainer: {
     flexDirection: 'row',
     marginVertical: 4,
     alignItems: 'flex-end',
   },
-  
+
   botMessageContainer: {
     justifyContent: 'flex-start',
   },
@@ -452,30 +452,30 @@ container: {
   userMessageContainer: {
     justifyContent: 'flex-end',
   },
-  
+
   botAvatar: {
     marginRight: 8,
   },
-  
+
   botAvatarImage: {
     width: 36,
     height: 36,
     borderRadius: 18,
     resizeMode: 'cover',
   },
-  
+
   messageBubble: {
     maxWidth: '75%',
     padding: 12,
     borderRadius: 16,
   },
-  
+
   speakerButton: {
     position: 'absolute',
     right: 0,
     bottom: 0,
   },
-  
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -486,7 +486,7 @@ container: {
     padding: 4,
     borderRadius: 20,
   },
-  
+
   sendButton: {
     padding: 4,
   },
