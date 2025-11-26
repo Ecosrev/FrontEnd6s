@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, View, Text, Modal, FlatList, TextInput, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { IconButton } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ExpoSpeechRecognitionModule,
   useSpeechRecognitionEvent,
@@ -16,7 +17,9 @@ export default function Chatbox({ visible, onClose }) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recognitionAvailable, setRecognitionAvailable] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const flatListRef = useRef();
+  const insets = useSafeAreaInsets();
 
   const theme = useTheme();
   const font = useFontSettings();
@@ -29,6 +32,28 @@ export default function Chatbox({ visible, onClose }) {
     }
   }, [visible]);
 
+  // Listener para o teclado
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardHeight(0);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
   // Verificar disponibilidade e permissões
   useEffect(() => {
     checkAvailability();
@@ -36,18 +61,14 @@ export default function Chatbox({ visible, onClose }) {
 
   const checkAvailability = async () => {
     try {
-
       const result = await ExpoSpeechRecognitionModule.getSupportedLocales();
-
       setRecognitionAvailable(true);
       console.log('Reconhecimento de voz disponível');
-
     } catch (error) {
       console.log('Reconhecimento de voz não disponível:', error);
       setRecognitionAvailable(false);
     }
   };
-
 
   useSpeechRecognitionEvent('start', () => {
     console.log('Gravação iniciada');
@@ -66,7 +87,6 @@ export default function Chatbox({ visible, onClose }) {
     if (transcript) {
       setMessage(transcript);
 
-
       if (event.isFinal) {
         sendMessage(transcript);
       }
@@ -84,7 +104,6 @@ export default function Chatbox({ visible, onClose }) {
 
   const startRecording = async () => {
     try {
-
       const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
 
       if (status !== 'granted') {
@@ -92,11 +111,8 @@ export default function Chatbox({ visible, onClose }) {
         return;
       }
 
-
       setMessage('');
 
-      // Tentar iniciar reconhecimento diretamente
-      // O módulo vai verificar internamente se está disponível
       await ExpoSpeechRecognitionModule.start({
         lang: 'pt-BR',
         interimResults: true,
@@ -106,12 +122,10 @@ export default function Chatbox({ visible, onClose }) {
       });
 
       console.log('Reconhecimento iniciado com sucesso');
-
     } catch (error) {
       console.error('Erro ao iniciar reconhecimento:', error);
       setIsRecording(false);
 
-      // Mensagem de erro mais específica
       const errorMessage = error.message || error.toString();
 
       if (errorMessage.includes('not available') || errorMessage.includes('não disponível')) {
@@ -151,15 +165,14 @@ export default function Chatbox({ visible, onClose }) {
     return text
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/[^\w\s]/g, '') // Remove pontuação
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w\s]/g, '')
       .trim();
   };
 
   const getAnswerFromFAQ = (userText) => {
     const normalizedUserText = normalizeText(userText);
 
-    // 1. Tentar match exato primeiro
     for (let intent of faqData.intents) {
       const exactMatch = intent.questions.find(
         q => normalizeText(q) === normalizedUserText
@@ -167,13 +180,11 @@ export default function Chatbox({ visible, onClose }) {
       if (exactMatch) return intent.answer;
     }
 
-    // 2. Tentar match parcial (contém as palavras-chave)
     for (let intent of faqData.intents) {
       const partialMatch = intent.questions.find(q => {
         const normalizedQuestion = normalizeText(q);
         const userWords = normalizedUserText.split(' ');
 
-        // Se 70% ou mais das palavras do usuário estão na pergunta
         const matchingWords = userWords.filter(word =>
           word.length > 2 && normalizedQuestion.includes(word)
         );
@@ -184,7 +195,6 @@ export default function Chatbox({ visible, onClose }) {
       if (partialMatch) return intent.answer;
     }
 
-    // 3. Busca por palavras-chave importantes
     const keywords = {
       'cadastro': [1, 2],
       'login': [3],
@@ -290,12 +300,17 @@ export default function Chatbox({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
-      >
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.overlay}>
+        <View 
+          style={[
+            styles.container, 
+            { 
+              backgroundColor: theme.colors.background,
+              paddingBottom: insets.bottom || 20, // Ajusta para os botões virtuais
+              marginBottom: keyboardHeight, // Ajusta quando o teclado aparece
+            }
+          ]}
+        >
           {/* Header */}
           <View style={[styles.header, { borderBottomWidth: 1, borderBottomColor: theme.colors.border }]}>
             <View style={styles.headerLeft}>
@@ -399,7 +414,7 @@ export default function Chatbox({ visible, onClose }) {
             </View>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -408,12 +423,12 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
 
   container: {
-    flex: 1,
-    marginTop: 'auto',
-    maxHeight: '80%',
+    maxHeight: '85%',
+    minHeight: '60%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },

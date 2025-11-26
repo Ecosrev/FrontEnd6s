@@ -1,42 +1,173 @@
 // src/components/RegisterForm.js
 import React, { useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView, TextInput } from 'react-native';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Checkbox } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useFontSettings } from '../contexts/FontContext';
-import { registerSchema } from '../utils/validationSchemas';
-import AuthForm from './AuthForm';
-import api from '../services/api'; 
+import CustomAlert from './CustomAlert';
+import api from '../services/api';
+
+// Funções de máscara
+const maskCPF = (value) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+    .replace(/(-\d{2})\d+?$/, '$1');
+};
+
+const maskPhone = (value) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers
+    .replace(/^(\d{2})(\d)/g, '($1) $2')
+    .replace(/(\d)(\d{4})$/, '$1-$2');
+};
+
+const maskCEP = (value) => {
+  const numbers = value.replace(/\D/g, '');
+  return numbers.replace(/^(\d{5})(\d)/, '$1-$2');
+};
 
 export default function RegisterForm({ onClose }) {
   const navigation = useNavigation();
-  const [showPassword, setShowPassword] = useState(false);
   const theme = useTheme();
   const { fontSize } = useFontSettings();
 
-  const handleRegister = async (values) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [useExampleData, setUseExampleData] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // Estados dos campos
+  const [name, setName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [celular, setCelular] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [logradouro, setLogradouro] = useState('');
+  const [numero, setNumero] = useState('');
+  const [complemento, setComplemento] = useState('');
+  const [bairro, setBairro] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
+  const [cep, setCep] = useState('');
+
+  // Estados para CustomAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    showCancelButton: false,
+    onConfirm: () => {},
+  });
+
+  const showAlert = (title, message, onConfirm = null, showCancelButton = false) => {
+    setAlertConfig({
+      title,
+      message,
+      showCancelButton,
+      onConfirm: onConfirm || (() => setAlertVisible(false)),
+    });
+    setAlertVisible(true);
+  };
+
+  const exampleValues = {
+    name: 'Maria Exemplo',
+    cpf: '123.456.789-01',
+    celular: '(11) 99999-8888',
+    email: 'maria.exemplo@example.com',
+    password: 'Exemplo@123',
+    logradouro: 'Rua das Flores',
+    numero: '100',
+    complemento: '',
+    bairro: 'Centro',
+    cidade: 'São Paulo',
+    estado: 'SP',
+    cep: '01001-000'
+  };
+
+  const applyExampleData = () => {
+    if (useExampleData) {
+      setName(exampleValues.name);
+      setCpf(exampleValues.cpf);
+      setCelular(exampleValues.celular);
+      setEmail(exampleValues.email);
+      setPassword(exampleValues.password);
+      setLogradouro(exampleValues.logradouro);
+      setNumero(exampleValues.numero);
+      setComplemento(exampleValues.complemento);
+      setBairro(exampleValues.bairro);
+      setCidade(exampleValues.cidade);
+      setEstado(exampleValues.estado);
+      setCep(exampleValues.cep);
+    } else {
+      setName('');
+      setCpf('');
+      setCelular('');
+      setEmail('');
+      setPassword('');
+      setLogradouro('');
+      setNumero('');
+      setComplemento('');
+      setBairro('');
+      setCidade('');
+      setEstado('');
+      setCep('');
+    }
+  };
+
+  React.useEffect(() => {
+    applyExampleData();
+  }, [useExampleData]);
+
+  const validateFields = () => {
+    const newErrors = {};
+    
+    if (!name.trim()) newErrors.name = 'Nome é obrigatório';
+    if (!email.trim()) newErrors.email = 'Email é obrigatório';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email inválido';
+    if (!password.trim()) newErrors.password = 'Senha é obrigatória';
+    else if (password.length < 6) newErrors.password = 'Senha deve ter no mínimo 6 caracteres';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleRegister = async () => {
+    if (!validateFields()) {
+      showAlert(
+        'Erro de validação',
+        'Preencha os campos obrigatórios corretamente'
+      );
+      return;
+    }
+
     try {
-      // montar endereco completo a partir dos campos separados
-      const enderecoConstruido = `${values.logradouro || ''}${values.numero ? ', ' + values.numero : ''}${values.complemento ? ' - ' + values.complemento : ''}${values.bairro ? ' - ' + values.bairro : ''}${values.cidade ? ' - ' + values.cidade : ''}${values.estado ? ' - ' + values.estado : ''}${values.cep ? ' - CEP: ' + values.cep : ''}`;
+      const enderecoConstruido = `${logradouro || ''}${numero ? ', ' + numero : ''}${complemento ? ' - ' + complemento : ''}${bairro ? ' - ' + bairro : ''}${cidade ? ' - ' + cidade : ''}${estado ? ' - ' + estado : ''}${cep ? ' - CEP: ' + cep : ''}`;
 
       const response = await api.post('/usuario', {
-        nome: values.name,
-        email: values.email,
-        senha: values.password,
+        nome: name,
+        email: email,
+        senha: password,
         tipo: "Cliente",
-        cpf: values.cpf || '',
-        celular: values.celular || '',
+        cpf: cpf.replace(/\D/g, ''),
+        celular: celular.replace(/\D/g, ''),
         endereco: enderecoConstruido,
       });
 
-      alert("Cadastro realizado com sucesso!");
-      onClose(); 
+      showAlert(
+        'Sucesso!',
+        'Cadastro realizado com sucesso!',
+        () => {
+          setAlertVisible(false);
+          onClose();
+        }
+      );
     } catch (error) {
       let msg = '';
       if (error.response) {
-        // Erro retornado pelo servidor
         msg += `Status: ${error.response.status}\n`;
         if (error.response.data && error.response.data.errors) {
           msg += error.response.data.errors.map(e => e.msg).join("\n");
@@ -46,127 +177,275 @@ export default function RegisterForm({ onClose }) {
           msg += JSON.stringify(error.response.data);
         }
       } else if (error.request) {
-        // Sem resposta do servidor
         msg = 'Sem resposta do servidor. Verifique sua conexão ou se o backend está online.';
       } else if (error.message) {
-        // Erro de configuração ou rede
         msg = `Erro: ${error.message}`;
       } else {
         msg = `Erro desconhecido: ${JSON.stringify(error)}`;
       }
-      Alert.alert("Erro no cadastro", msg);
+      showAlert('Erro no cadastro', msg);
       console.error("Erro no cadastro:", error);
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  const fetchAddressByCEP = async () => {
+    const clean = cep.replace(/\D/g, '');
+    if (clean.length !== 8) {
+      showAlert(
+        'CEP inválido',
+        'Informe um CEP com 8 dígitos para buscar.'
+      );
+      return;
+    }
+    try {
+      const resp = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      const j = await resp.json();
+      if (j.erro) throw new Error('CEP não encontrado');
+      
+      setLogradouro(j.logradouro || '');
+      setBairro(j.bairro || '');
+      setCidade(j.localidade || '');
+      setEstado(j.uf || '');
+      showAlert(
+        'Endereço preenchido',
+        'Logradouro, bairro, cidade e estado preenchidos a partir do CEP.'
+      );
+    } catch (error) {
+      console.error('ViaCEP erro', error);
+      showAlert('Erro', 'Não foi possível buscar o CEP.');
+    }
   };
 
-  const [useExampleData, setUseExampleData] = useState(false);
-
-  const exampleValues = {
-    name: 'Maria Exemplo',
-    cpf: '12345678901',
-    celular: '5511999998888',
-    email: 'maria.exemplo@example.com',
-    password: 'Exemplo@123',
-    logradouro: 'Rua das Flores',
-    numero: '100',
-    complemento: '',
-    bairro: 'Centro',
-    cidade: 'São Paulo',
-    estado: 'SP',
-    cep: '01001000'
+  const inputStyle = {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 4,
+    color: theme.colors.text.primary,
+    backgroundColor: theme.colors.background,
+    fontSize: fontSize.md,
   };
 
-  const registerFields = [
-    { name: 'name', label: 'Nome Completo' },
-    { name: 'cpf', label: 'CPF', keyboardType: 'numeric' },
-    { name: 'celular', label: 'Celular', keyboardType: 'phone-pad' },
-    { name: 'email', label: 'Email' },
-    { name: 'password', label: 'Senha', secureTextEntry: true },
-    { name: 'logradouro', label: 'Logradouro' },
-    { name: 'numero', label: 'Número', keyboardType: 'numeric' },
-    { name: 'complemento', label: 'Complemento' },
-    { name: 'bairro', label: 'Bairro' },
-    { name: 'cidade', label: 'Cidade' },
-    { name: 'estado', label: 'Estado' },
-    { name: 'cep', label: 'CEP', keyboardType: 'numeric' },
-  ];
+  const errorStyle = {
+    color: '#ef4444',
+    fontSize: fontSize.sm,
+    marginBottom: 8,
+    marginTop: -2,
+  };
+
+  const labelStyle = {
+    color: theme.colors.text.primary,
+    fontSize: fontSize.md,
+    marginBottom: 6,
+    fontWeight: '500',
+  };
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
-      <Text style={[styles.title, { color: theme.colors.primary, fontSize: fontSize.xl }]}>Cadastro</Text>
+    <>
+      <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
+        <Text style={[styles.title, { color: theme.colors.primary, fontSize: fontSize.xl }]}>Cadastro</Text>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-        <Checkbox
-          status={useExampleData ? 'checked' : 'unchecked'}
-          onPress={() => setUseExampleData(!useExampleData)}
-          color={theme.colors.primary}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+          <Checkbox
+            status={useExampleData ? 'checked' : 'unchecked'}
+            onPress={() => setUseExampleData(!useExampleData)}
+            color={theme.colors.primary}
+          />
+          <TouchableOpacity onPress={() => setUseExampleData(!useExampleData)}>
+            <Text style={{ color: theme.colors.text.primary }}>
+              {useExampleData ? 'Usando dados de exemplo' : 'Mostrar dados de exemplo'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Nome Completo */}
+        <Text style={labelStyle}>Nome Completo *</Text>
+        <TextInput
+          style={inputStyle}
+          value={name}
+          onChangeText={setName}
+          placeholder="Digite seu nome completo"
+          placeholderTextColor={theme.colors.text.secondary}
         />
-        <TouchableOpacity onPress={() => setUseExampleData(!useExampleData)}>
-          <Text style={{ color: theme.colors.text.primary }}>{useExampleData ? 'Usando dados de exemplo' : 'Mostrar dados de exemplo'}</Text>
+        {errors.name && <Text style={errorStyle}>{errors.name}</Text>}
+
+        {/* CPF */}
+        <Text style={labelStyle}>CPF</Text>
+        <TextInput
+          style={inputStyle}
+          value={cpf}
+          onChangeText={(text) => setCpf(maskCPF(text))}
+          placeholder="000.000.000-00"
+          placeholderTextColor={theme.colors.text.secondary}
+          keyboardType="numeric"
+          maxLength={14}
+        />
+        {errors.cpf && <Text style={errorStyle}>{errors.cpf}</Text>}
+
+        {/* Celular */}
+        <Text style={labelStyle}>Celular</Text>
+        <TextInput
+          style={inputStyle}
+          value={celular}
+          onChangeText={(text) => setCelular(maskPhone(text))}
+          placeholder="(00) 00000-0000"
+          placeholderTextColor={theme.colors.text.secondary}
+          keyboardType="phone-pad"
+          maxLength={15}
+        />
+        {errors.celular && <Text style={errorStyle}>{errors.celular}</Text>}
+
+        {/* Email */}
+        <Text style={labelStyle}>Email *</Text>
+        <TextInput
+          style={inputStyle}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="seu@email.com"
+          placeholderTextColor={theme.colors.text.secondary}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {errors.email && <Text style={errorStyle}>{errors.email}</Text>}
+
+        {/* Senha */}
+        <Text style={labelStyle}>Senha *</Text>
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            style={inputStyle}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Mínimo 6 caracteres"
+            placeholderTextColor={theme.colors.text.secondary}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity
+            style={{ position: 'absolute', right: 12, top: 12 }}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Text style={{ color: theme.colors.primary }}>
+              {showPassword ? '👁️' : '👁️‍🗨️'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {errors.password && <Text style={errorStyle}>{errors.password}</Text>}
+
+        {/* CEP */}
+        <Text style={labelStyle}>CEP</Text>
+        <TextInput
+          style={inputStyle}
+          value={cep}
+          onChangeText={(text) => setCep(maskCEP(text))}
+          placeholder="00000-000"
+          placeholderTextColor={theme.colors.text.secondary}
+          keyboardType="numeric"
+          maxLength={9}
+        />
+        {errors.cep && <Text style={errorStyle}>{errors.cep}</Text>}
+
+        {/* Botão Buscar CEP */}
+        <View style={{ marginBottom: 16, alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={fetchAddressByCEP}
+            style={[styles.cepButton, { borderColor: theme.colors.primary }]}
+          >
+            <Text style={{ color: theme.colors.primary }}>Buscar por CEP</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Logradouro */}
+        <Text style={labelStyle}>Logradouro</Text>
+        <TextInput
+          style={inputStyle}
+          value={logradouro}
+          onChangeText={setLogradouro}
+          placeholder="Rua, Avenida, etc."
+          placeholderTextColor={theme.colors.text.secondary}
+        />
+
+        {/* Número */}
+        <Text style={labelStyle}>Número</Text>
+        <TextInput
+          style={inputStyle}
+          value={numero}
+          onChangeText={setNumero}
+          placeholder="Número"
+          placeholderTextColor={theme.colors.text.secondary}
+          keyboardType="numeric"
+        />
+
+        {/* Complemento */}
+        <Text style={labelStyle}>Complemento</Text>
+        <TextInput
+          style={inputStyle}
+          value={complemento}
+          onChangeText={setComplemento}
+          placeholder="Apto, Bloco, etc."
+          placeholderTextColor={theme.colors.text.secondary}
+        />
+
+        {/* Bairro */}
+        <Text style={labelStyle}>Bairro</Text>
+        <TextInput
+          style={inputStyle}
+          value={bairro}
+          onChangeText={setBairro}
+          placeholder="Bairro"
+          placeholderTextColor={theme.colors.text.secondary}
+        />
+
+        {/* Cidade */}
+        <Text style={labelStyle}>Cidade</Text>
+        <TextInput
+          style={inputStyle}
+          value={cidade}
+          onChangeText={setCidade}
+          placeholder="Cidade"
+          placeholderTextColor={theme.colors.text.secondary}
+        />
+
+        {/* Estado */}
+        <Text style={labelStyle}>Estado</Text>
+        <TextInput
+          style={inputStyle}
+          value={estado}
+          onChangeText={(text) => setEstado(text.toUpperCase())}
+          placeholder="UF"
+          placeholderTextColor={theme.colors.text.secondary}
+          maxLength={2}
+          autoCapitalize="characters"
+        />
+
+        {/* Botão Cadastrar */}
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.colors.primary }]}
+          onPress={handleRegister}
+        >
+          <Text style={[styles.buttonText, { color: theme.colors.text.inverse, fontSize: fontSize.md }]}>
+            Cadastrar
+          </Text>
         </TouchableOpacity>
-      </View>
 
-      <AuthForm
-        initialValues={useExampleData ? exampleValues : { name: '', cpf: '', celular: '', email: '', password: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', cep: '' }}
-        validationSchema={registerSchema}
-        onSubmit={handleRegister}
-        fields={registerFields}
-        isPasswordVisible={showPassword}
-        togglePasswordVisibility={togglePasswordVisibility}
-      >
-        {({ handleSubmit, values, setFieldValue }) => {
-          const fetchAddressByCEP = async (cep) => {
-            const clean = (cep || '').replace(/\D/g, '');
-            if (clean.length !== 8) {
-              Alert.alert('CEP inválido', 'Informe um CEP com 8 dígitos para buscar.');
-              return;
-            }
-            try {
-              const resp = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-              const j = await resp.json();
-              if (j.erro) throw new Error('CEP não encontrado');
-              // popular campos
-              setFieldValue('logradouro', j.logradouro || '');
-              setFieldValue('bairro', j.bairro || '');
-              setFieldValue('cidade', j.localidade || '');
-              setFieldValue('estado', j.uf || '');
-              Alert.alert('Endereço preenchido', 'Logradouro, bairro, cidade e estado preenchidos a partir do CEP.');
-            } catch (error) {
-              console.error('ViaCEP erro', error);
-              Alert.alert('Erro', 'Não foi possível buscar o CEP.');
-            }
-          };
+        <TouchableOpacity onPress={onClose} style={styles.link}>
+          <Text style={[styles.linkText, { color: theme.colors.primary, fontSize: fontSize.sm }]}>
+            Já tem uma conta? Faça login
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
 
-          return (
-            <>
-              {/* Botão buscar por CEP acima do botão cadastrar */}
-              <View style={{ marginBottom: 10, alignItems: 'center' }}>
-                <TouchableOpacity onPress={() => fetchAddressByCEP(values.cep)} style={[styles.cepButton, { borderColor: theme.colors.primary }] }>
-                  <Text style={{ color: theme.colors.primary }}>Buscar por CEP</Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: theme.colors.primary }]}
-                onPress={handleSubmit}
-              >
-                <Text style={[styles.buttonText, { color: theme.colors.text.inverse, fontSize: fontSize.md }]}>Cadastrar</Text>
-              </TouchableOpacity>
-            </>
-          );
-        }}
-      </AuthForm>
-
-      <TouchableOpacity onPress={onClose} style={styles.link}>
-        <Text style={[styles.linkText, { color: theme.colors.primary, fontSize: fontSize.sm }]}>Já tem uma conta? Faça login</Text>
-      </TouchableOpacity>
-
-      {/* Removi o botão de voltar para Home, pois agora está dentro do modal de login */}
-    </ScrollView>
+      {/* CustomAlert */}
+      <CustomAlert
+        visible={alertVisible}
+        onClose={() => setAlertVisible(false)}
+        onConfirm={alertConfig.onConfirm}
+        onCancel={() => setAlertVisible(false)}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancelButton={alertConfig.showCancelButton}
+        singleButtonText="OK"
+      />
+    </>
   );
 }
 
@@ -180,7 +459,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 16,
   },
   buttonText: {
     fontWeight: 'bold',
@@ -195,6 +474,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 6,
   }
 });

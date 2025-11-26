@@ -1081,7 +1081,7 @@ const fetchAddressByCEP = async (cep) => {
           {/* Ações Rápidas */}
           <View style={[styles.card, { backgroundColor: theme.colors.surface, padding: 12, marginTop: 16 }]}>
             <Text style={[styles.sectionTitle, { fontSize: fontSize.md, color: theme.colors.text.primary }]}>Ações Rápidas</Text>
-            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Main', { screen: 'Configurações' })}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Main', { screen: 'ConfigTab' })}>
               <MaterialCommunityIcons name="cog" size={18} color={theme.colors.primary} />
               <Text style={[styles.quickActionText, { color: theme.colors.text.primary, fontSize: fontSize.md }]}>Configurações</Text>
             </TouchableOpacity>

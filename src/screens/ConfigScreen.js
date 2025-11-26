@@ -1,7 +1,7 @@
 //src\screens\ConfigScreen.js
 import React, { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useFontSettings } from "../contexts/FontContext";
@@ -14,13 +14,68 @@ const ConfigScreen = () => {
   const { fontSize, updateFontSize, fontPreference, updateFontPreference } = useFontSettings();
   const [currentThemeMode, setCurrentThemeMode] = useState(themeMode);
   const [currentFontPreference, setCurrentFontPreference] = useState(fontPreference);
-  const appVersion = "0.1.0-beta";
+  const [appVersion, setAppVersion] = useState("0.1.0-beta");
+  const [isLoadingVersion, setIsLoadingVersion] = useState(true);
   const navigation = useNavigation();
+
+  // Configurações do repositório GitHub
+  const GITHUB_OWNER = "Ecosrev"; 
+  const GITHUB_REPO = "FrontEnd6s"; 
 
   useEffect(() => {
     setCurrentThemeMode(themeMode);
     setCurrentFontPreference(fontPreference);
   }, [themeMode, fontPreference]);
+
+  useEffect(() => {
+    fetchLatestVersion();
+  }, []);
+
+  const fetchLatestVersion = async () => {
+    try {
+      setIsLoadingVersion(true);
+      
+      // Buscar a última release do GitHub
+      const response = await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+        {
+          headers: {
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        // Remove o 'v' se a tag começar com 'v' (ex: v1.0.0 -> 1.0.0)
+        const version = data.tag_name.replace(/^v/, '');
+        setAppVersion(version);
+      } else {
+        // Se não houver release, tentar buscar a última tag
+        const tagsResponse = await fetch(
+          `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/tags`,
+          {
+            headers: {
+              'Accept': 'application/vnd.github.v3+json',
+            },
+          }
+        );
+
+        if (tagsResponse.ok) {
+          const tags = await tagsResponse.json();
+          if (tags.length > 0) {
+            const latestTag = tags[0].name.replace(/^v/, '');
+            setAppVersion(latestTag);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar versão do GitHub:', error);
+      // Mantém a versão padrão em caso de erro
+    } finally {
+      setIsLoadingVersion(false);
+    }
+  };
 
   const handleThemeChange = (mode) => {
     setCurrentThemeMode(mode);
@@ -53,7 +108,7 @@ const ConfigScreen = () => {
   };
 
   return (
-  <SafeAreaView edges={['left','right','bottom']} style={[styles.container, { backgroundColor: colors.background }]}> 
+    <SafeAreaView edges={['left','right','bottom']} style={[styles.container, { backgroundColor: colors.background }]}> 
       <ScrollView>
         <Text style={[styles.title, { color: colors.primary, fontSize: fontSize.lg }]}>Configurações</Text>
 
@@ -112,7 +167,21 @@ const ConfigScreen = () => {
         {/* Versão do App */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary, fontSize: fontSize.md }]}>Versão do App</Text>
-          <Text style={[styles.optionText, { color: colors.text.secondary, fontSize: fontSize.sm }]}>{appVersion}</Text>
+          <View style={styles.versionContainer}>
+            {isLoadingVersion ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={[styles.optionText, { color: colors.text.secondary, fontSize: fontSize.sm }]}>
+                {appVersion}
+              </Text>
+            )}
+            <TouchableOpacity 
+              onPress={fetchLatestVersion}
+              style={styles.refreshButton}
+            >
+              <Ionicons name="refresh" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Contato / Suporte */}
@@ -150,16 +219,16 @@ const ConfigScreen = () => {
         </View>
       </ScrollView>
 
-    {/* Botão de Voltar para Tela Inicial */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
-            style={styles.backHomeButton}
-        >
-            <Ionicons name="arrow-back" size={18} color={colors.text.primary} />
-            <Text style={[styles.backHomeText, { color: colors.text.primary, fontSize: fontSize.sm }]}>
-                Voltar para tela inicial
-            </Text>
-        </TouchableOpacity>
+      {/* Botão de Voltar para Tela Inicial */}
+      <TouchableOpacity
+        onPress={() => navigation.navigate('Main', { screen: 'HomeTab' })}
+        style={styles.backHomeButton}
+      >
+        <Ionicons name="arrow-back" size={18} color={colors.text.primary} />
+        <Text style={[styles.backHomeText, { color: colors.text.primary, fontSize: fontSize.sm }]}>
+          Voltar para tela inicial
+        </Text>
+      </TouchableOpacity>
 
     </SafeAreaView>
   );
@@ -191,13 +260,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
+  versionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  refreshButton: {
+    padding: 5,
+  },
   backHomeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
   },
-
   backHomeText: {
     marginLeft: 6,
     textDecorationLine: 'underline',
