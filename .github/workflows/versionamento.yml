@@ -17,17 +17,26 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
       - name: Obter última tag
         id: last_tag
         run: |
           tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "Última tag: $tag"
 
       - name: Obter mensagem do último commit
         id: commit_msg
         run: |
-          echo "msg=$(git log -1 --pretty=%B)" >> $GITHUB_OUTPUT
+          msg=$(git log -1 --pretty=%B)
+          echo "msg=$msg" >> $GITHUB_OUTPUT
+          echo "Mensagem do commit: $msg"
 
       - name: Calcular próxima versão
         id: new_version
@@ -35,29 +44,85 @@ jobs:
           msg="${{ steps.commit_msg.outputs.msg }}"
           tag="${{ steps.last_tag.outputs.tag }}"
 
-          echo "Commit: $msg"
-          echo "Última tag: $tag"
+          echo "📝 Commit: $msg"
+          echo "🏷️  Última tag: $tag"
 
           version="${tag#v}"
           IFS='.' read -r major minor patch <<< "$version"
 
-          if [[ "$msg" =~ ^BREAKING\ CHANGE ]]; then
+          if [[ "$msg" =~ ^BREAKING\ CHANGE ]] || [[ "$msg" =~ feat!: ]]; then
             ((major+=1))
             minor=0
             patch=0
+            echo "type=major" >> $GITHUB_OUTPUT
           elif [[ "$msg" =~ ^feat ]]; then
             ((minor+=1))
             patch=0
+            echo "type=minor" >> $GITHUB_OUTPUT
           elif [[ "$msg" =~ ^fix ]]; then
             ((patch+=1))
+            echo "type=patch" >> $GITHUB_OUTPUT
           else
-            echo "Nenhum padrão encontrado, não será criada nova versão."
+            echo "⏭️  Nenhum padrão encontrado, não será criada nova versão."
             echo "version=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           next="v${major}.${minor}.${patch}"
+          next_plain="${major}.${minor}.${patch}"
           echo "version=$next" >> $GITHUB_OUTPUT
+          echo "version_plain=$next_plain" >> $GITHUB_OUTPUT
+          echo "🎯 Nova versão: $next"
+
+      - name: Atualizar package.json
+        if: ${{ steps.new_version.outputs.version != '' }}
+        run: |
+          version="${{ steps.new_version.outputs.version_plain }}"
+          
+          # Atualizar version no package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$version';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          
+          echo "✅ package.json atualizado para versão $version"
+
+      - name: Criar/Atualizar src/version.js
+        if: ${{ steps.new_version.outputs.version != '' }}
+        run: |
+          version="${{ steps.new_version.outputs.version_plain }}"
+          
+          # Criar diretório src se não existir
+          mkdir -p src
+          
+          # Criar arquivo version.js
+          cat > src/version.js << EOF
+          // Este arquivo é gerado automaticamente pelo GitHub Actions
+          // Não edite manualmente
+
+          export const APP_VERSION = '$version';
+          EOF
+          
+          echo "✅ src/version.js criado/atualizado com versão $version"
+
+      - name: Commit das alterações
+        if: ${{ steps.new_version.outputs.version != '' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add package.json src/version.js
+          
+          # Verificar se há mudanças para commitar
+          if git diff --staged --quiet; then
+            echo "⚠️  Nenhuma alteração para commitar"
+          else
+            git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }}"
+            git push origin main
+            echo "✅ Alterações commitadas e enviadas"
+          fi
 
       - name: Criar nova tag
         if: ${{ steps.new_version.outputs.version != '' }}
@@ -65,5 +130,33 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Buscar as últimas alterações
+          git pull origin main
+          
           git tag -a "${{ steps.new_version.outputs.version }}" -m "Release ${{ steps.new_version.outputs.version }}"
           git push origin "${{ steps.new_version.outputs.version }}"
+          
+          echo "🏷️  Tag ${{ steps.new_version.outputs.version }} criada e enviada"
+
+      - name: Criar GitHub Release
+        if: ${{ steps.new_version.outputs.version != '' }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.new_version.outputs.version }}
+          release_name: Release ${{ steps.new_version.outputs.version }}
+          body: |
+            ## 🚀 Release ${{ steps.new_version.outputs.version }}
+            
+            **Tipo:** ${{ steps.new_version.outputs.type }}
+            
+            **Commit:** ${{ steps.commit_msg.outputs.msg }}
+            
+            ### 📦 Como instalar
+            Baixe o APK na seção Assets abaixo.
+            
+            ### 📝 Changelog
+            Verifique as alterações completas nos commits desde a última versão.
+          draft: false
+          prerelease: false

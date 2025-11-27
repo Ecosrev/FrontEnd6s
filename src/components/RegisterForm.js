@@ -145,8 +145,6 @@ export default function RegisterForm({ onClose }) {
     }
 
     try {
-      const enderecoConstruido = `${logradouro || ''}${numero ? ', ' + numero : ''}${complemento ? ' - ' + complemento : ''}${bairro ? ' - ' + bairro : ''}${cidade ? ' - ' + cidade : ''}${estado ? ' - ' + estado : ''}${cep ? ' - CEP: ' + cep : ''}`;
-
       const response = await api.post('/usuario', {
         nome: name,
         email: email,
@@ -154,7 +152,14 @@ export default function RegisterForm({ onClose }) {
         tipo: "Cliente",
         cpf: cpf.replace(/\D/g, ''),
         celular: celular.replace(/\D/g, ''),
-        endereco: enderecoConstruido,
+        // Campos de endereço separados
+        logradouro: logradouro.trim() || null,
+        numero: numero.trim() || null,
+        complemento: complemento.trim() || null,
+        bairro: bairro.trim() || null,
+        cidade: cidade.trim() || null,
+        estado: estado.trim().toUpperCase() || null,
+        cep: cep.replace(/\D/g, '') || null,
       });
 
       showAlert(

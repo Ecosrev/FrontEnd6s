@@ -1,26 +1,31 @@
 //src\screens\ConfigScreen.js
 import React, { useState, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useFontSettings } from "../contexts/FontContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { APP_VERSION } from '../version';
 
 const ConfigScreen = () => {
   const { colors, themeMode, updateThemeMode, spacing } = useTheme();
   const { fontSize, updateFontSize, fontPreference, updateFontPreference } = useFontSettings();
   const [currentThemeMode, setCurrentThemeMode] = useState(themeMode);
   const [currentFontPreference, setCurrentFontPreference] = useState(fontPreference);
-  const [appVersion, setAppVersion] = useState("0.1.0-beta");
-  const [isLoadingVersion, setIsLoadingVersion] = useState(true);
+  const [latestVersion, setLatestVersion] = useState(null);
+  const [isLoadingVersion, setIsLoadingVersion] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const navigation = useNavigation();
 
   // Configurações do repositório GitHub
   const GITHUB_OWNER = "Ecosrev"; 
-  const GITHUB_REPO = "FrontEnd6s"; 
+  const GITHUB_REPO = "FrontEnd6s";
+  
+  // Link do Google Drive para download do APK
+  const DOWNLOAD_URL = "https://drive.google.com/file/d/1bfan-ow3i3DbMVeEI6vHYEGvK2sWSSVJ/view?usp=sharing";
 
   useEffect(() => {
     setCurrentThemeMode(themeMode);
@@ -28,14 +33,28 @@ const ConfigScreen = () => {
   }, [themeMode, fontPreference]);
 
   useEffect(() => {
-    fetchLatestVersion();
+    checkForUpdates();
   }, []);
 
-  const fetchLatestVersion = async () => {
+  const compareVersions = (v1, v2) => {
+    const parts1 = v1.replace(/^v/, '').split('.').map(Number);
+    const parts2 = v2.replace(/^v/, '').split('.').map(Number);
+    
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+      const part1 = parts1[i] || 0;
+      const part2 = parts2[i] || 0;
+      
+      if (part1 > part2) return 1;
+      if (part1 < part2) return -1;
+    }
+    
+    return 0;
+  };
+
+  const checkForUpdates = async () => {
     try {
       setIsLoadingVersion(true);
       
-      // Buscar a última release do GitHub
       const response = await fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
         {
@@ -47,11 +66,13 @@ const ConfigScreen = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // Remove o 'v' se a tag começar com 'v' (ex: v1.0.0 -> 1.0.0)
         const version = data.tag_name.replace(/^v/, '');
-        setAppVersion(version);
+        setLatestVersion(version);
+        
+        const comparison = compareVersions(version, APP_VERSION);
+        setUpdateAvailable(comparison > 0);
+        
       } else {
-        // Se não houver release, tentar buscar a última tag
         const tagsResponse = await fetch(
           `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/tags`,
           {
@@ -64,16 +85,40 @@ const ConfigScreen = () => {
         if (tagsResponse.ok) {
           const tags = await tagsResponse.json();
           if (tags.length > 0) {
-            const latestTag = tags[0].name.replace(/^v/, '');
-            setAppVersion(latestTag);
+            const version = tags[0].name.replace(/^v/, '');
+            setLatestVersion(version);
+            
+            const comparison = compareVersions(version, APP_VERSION);
+            setUpdateAvailable(comparison > 0);
           }
         }
       }
     } catch (error) {
       console.error('Erro ao buscar versão do GitHub:', error);
-      // Mantém a versão padrão em caso de erro
     } finally {
       setIsLoadingVersion(false);
+    }
+  };
+
+  const handleUpdatePress = async () => {
+    try {
+      const canOpen = await Linking.canOpenURL(DOWNLOAD_URL);
+      if (canOpen) {
+        await Linking.openURL(DOWNLOAD_URL);
+      } else {
+        Alert.alert(
+          'Erro',
+          'Não foi possível abrir o link de download.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Erro ao abrir URL:', error);
+      Alert.alert(
+        'Erro',
+        'Ocorreu um erro ao tentar abrir o link de download.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -167,21 +212,53 @@ const ConfigScreen = () => {
         {/* Versão do App */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionTitle, { color: colors.text.primary, fontSize: fontSize.md }]}>Versão do App</Text>
+          
           <View style={styles.versionContainer}>
-            {isLoadingVersion ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Text style={[styles.optionText, { color: colors.text.secondary, fontSize: fontSize.sm }]}>
-                {appVersion}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.optionText, { color: colors.text.primary, fontSize: fontSize.sm, fontWeight: 'bold' }]}>
+                Versão Atual: {APP_VERSION}
               </Text>
-            )}
+              {latestVersion && (
+                <Text style={[styles.optionText, { color: colors.text.secondary, fontSize: fontSize.xs, marginTop: 4 }]}>
+                  Última versão disponível: {latestVersion}
+                </Text>
+              )}
+            </View>
             <TouchableOpacity 
-              onPress={fetchLatestVersion}
+              onPress={checkForUpdates}
               style={styles.refreshButton}
+              disabled={isLoadingVersion}
             >
-              <Ionicons name="refresh" size={20} color={colors.primary} />
+              {isLoadingVersion ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Ionicons name="refresh" size={20} color={colors.primary} />
+              )}
             </TouchableOpacity>
           </View>
+
+          {/* Botão de Atualização */}
+          {updateAvailable && (
+            <TouchableOpacity 
+              style={[styles.updateButton, { backgroundColor: colors.primary }]}
+              onPress={handleUpdatePress}
+            >
+              <Ionicons name="download-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={[styles.updateButtonText, { fontSize: fontSize.sm }]}>
+                Baixar versão {latestVersion}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Mensagem quando está atualizado */}
+          {latestVersion && !updateAvailable && !isLoadingVersion && (
+            <View style={[styles.upToDateNotice, { backgroundColor: colors.success + '15' || '#4CAF5015', borderColor: colors.success || '#4CAF50' }]}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success || '#4CAF50'} style={{ marginRight: 8 }} />
+              <Text style={[styles.upToDateText, { color: colors.success || '#4CAF50', fontSize: fontSize.xs }]}>
+                Seu app está atualizado
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Contato / Suporte */}
@@ -190,7 +267,6 @@ const ConfigScreen = () => {
           <TouchableOpacity style={[styles.optionRow, { borderColor: colors.border }]} onPress={async () => {
             const email = 'ecosrev.suporte@gmail.com';
             const subject = encodeURIComponent('Contato - Suporte EcosRev');
-            // tentar ler dados do usuário armazenados localmente
             let userInfo = { nome: '', email: '', id: '' };
             try {
               const storedUser = await AsyncStorage.getItem('user');
@@ -203,7 +279,7 @@ const ConfigScreen = () => {
             } catch (err) {
               console.warn('Não foi possível ler usuário do AsyncStorage:', err);
             }
-            const bodyText = `Olá, preciso de suporte.\n\nNome: ${userInfo.nome}\nEmail: ${userInfo.email}\nID do usuário: ${userInfo.id}\n\nDescreva seu problema:`;
+            const bodyText = `Olá, preciso de suporte.\n\nNome: ${userInfo.nome}\nEmail: ${userInfo.email}\nID do usuário: ${userInfo.id}\nVersão do App: ${APP_VERSION}\n\nDescreva seu problema:`;
             const body = encodeURIComponent(bodyText);
             const url = `mailto:${email}?subject=${subject}&body=${body}`;
             try {
@@ -260,13 +336,41 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
   },
+  optionText: {
+    flex: 1,
+  },
   versionContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 10,
   },
   refreshButton: {
     padding: 5,
+  },
+  updateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+  },
+  updateButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  upToDateNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  upToDateText: {
+    flex: 1,
+    fontWeight: '600',
   },
   backHomeButton: {
     flexDirection: 'row',
