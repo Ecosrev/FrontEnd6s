@@ -1,6 +1,6 @@
 // src\services\authService.mock.js
 async function mockLogin(email, password) {
-    // simula delay
+    
     await new Promise((resolve) => setTimeout(resolve, 500));
   
     if (email === "teste@email.com" && password === "Teste@123") {
